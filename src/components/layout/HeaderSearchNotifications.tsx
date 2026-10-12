@@ -83,9 +83,11 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+
   return (
-    <div className="flex items-center gap-3 flex-1 justify-between">
-      {/* Global Search Input */}
+    <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-between">
+      {/* Global Search Input (Desktop) */}
       <div ref={searchRef} className="relative flex-1 max-w-md hidden md:block">
         <div className="relative w-full">
           <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,7 +116,7 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
           )}
         </div>
 
-        {/* Live Search Results Popover */}
+        {/* Live Search Results Popover (Desktop) */}
         {showSearchDropdown && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 z-50 space-y-3 max-h-80 overflow-y-auto">
             {isSearching ? (
@@ -123,7 +125,6 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
               <p className="text-center py-4 text-xs text-slate-400 font-medium">No results found for "{query}"</p>
             ) : (
               <>
-                {/* Matched Projects */}
                 {searchResults.projects.length > 0 && (
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2">Projects</span>
@@ -142,7 +143,6 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
                   </div>
                 )}
 
-                {/* Matched Tasks */}
                 {searchResults.tasks.length > 0 && (
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2">Tasks</span>
@@ -171,8 +171,19 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
         )}
       </div>
 
-      {/* Right Action Icons: Status Pill, Notification Bell, User Avatar */}
-      <div className="flex items-center gap-3 ml-auto">
+      {/* Right Action Icons */}
+      <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+        {/* Mobile Search Button */}
+        <button
+          onClick={() => setIsMobileSearchOpen(true)}
+          className="md:hidden p-2 text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+          title="Search"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+
         <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
           Cloudflare D1
@@ -196,9 +207,9 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
             )}
           </button>
 
-          {/* Notifications Dropdown Panel */}
+          {/* Notifications Dropdown Panel (Responsive) */}
           {showNotificationPanel && (
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-3 animate-in fade-in duration-100">
+            <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-3 animate-in fade-in duration-100">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <span className="font-bold text-xs text-slate-900">Live Notifications</span>
                 <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
@@ -238,6 +249,88 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
           />
         </a>
       </div>
+
+      {/* Mobile Search Overlay Modal */}
+      {isMobileSearchOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex flex-col p-4">
+          <div className="bg-white rounded-2xl p-4 shadow-2xl space-y-3 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <div className="relative flex-1">
+                <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search tasks, projects..."
+                  className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-blue-600 font-medium"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  setIsMobileSearchOpen(false);
+                  setQuery('');
+                }}
+                className="p-2 text-xs font-bold text-slate-500 hover:text-slate-800"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3">
+              {isSearching ? (
+                <p className="text-center py-6 text-xs text-slate-400">Searching...</p>
+              ) : query && searchResults.tasks.length === 0 && searchResults.projects.length === 0 ? (
+                <p className="text-center py-6 text-xs text-slate-400">No results found</p>
+              ) : (
+                <>
+                  {searchResults.projects.length > 0 && (
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Projects</span>
+                      <div className="mt-1 space-y-1">
+                        {searchResults.projects.map((p) => (
+                          <a
+                            key={p.id}
+                            href="/projects"
+                            onClick={() => setIsMobileSearchOpen(false)}
+                            className="flex items-center gap-2 p-2.5 rounded-xl hover:bg-slate-50 border border-slate-100"
+                          >
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color || '#2563eb' }}></span>
+                            <span className="text-xs font-bold text-slate-800">{p.name}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {searchResults.tasks.length > 0 && (
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Tasks</span>
+                      <div className="mt-1 space-y-1">
+                        {searchResults.tasks.map((t) => (
+                          <a
+                            key={t.id}
+                            href="/tasks"
+                            onClick={() => setIsMobileSearchOpen(false)}
+                            className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 border border-slate-100"
+                          >
+                            <span className="text-xs font-bold text-slate-800 truncate">{t.title}</span>
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-blue-50 text-blue-700">
+                              {t.status}
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

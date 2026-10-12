@@ -303,14 +303,14 @@ export default function TaskBoard() {
         <>
           {/* VIEW 1: KANBAN BOARD */}
           {viewMode === 'kanban' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="flex md:grid md:grid-cols-2 xl:grid-cols-4 gap-4 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory pb-4 md:pb-0 -mx-2 px-2 sm:mx-0 sm:px-0">
               {COLUMNS.map((column) => {
                 const columnTasks = filteredTasks.filter((t) => t.status === column.id);
 
                 return (
                   <div
                     key={column.id}
-                    className="flex flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[500px]"
+                    className="w-[85vw] max-w-[320px] shrink-0 snap-center md:w-auto md:shrink flex flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[500px]"
                   >
                     {/* Column Header */}
                     <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
@@ -488,8 +488,8 @@ export default function TaskBoard() {
 
       {/* CREATE TASK MODAL */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white border border-slate-200 rounded-t-3xl sm:rounded-3xl w-full max-w-md p-5 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-black text-base text-slate-900">Create New Task</h3>
               <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600 text-sm">✕</button>
@@ -612,7 +612,7 @@ export default function TaskBoard() {
       {/* TASK DETAIL DRAWER */}
       {selectedTask && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-end">
-          <div className="w-full max-w-lg bg-white border-l border-slate-200 h-full flex flex-col shadow-2xl">
+          <div className="w-full sm:max-w-lg bg-white border-l border-slate-200 h-full flex flex-col shadow-2xl pb-16 sm:pb-0">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span

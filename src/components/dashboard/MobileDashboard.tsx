@@ -78,56 +78,9 @@ export default function MobileDashboard({ user }: { user: any }) {
   const userName = user?.name ? user.name.split(' ')[0] : 'Maya';
 
   return (
-    <div className="min-h-screen bg-[#f8faff] text-slate-800 font-sans pb-24 antialiased">
-      {/* Top Mobile Bar - Only on Mobile */}
-      <header className="md:hidden sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-100 px-5 py-3 flex items-center justify-between shadow-xs">
-        {/* Brand & Workspace Dropdown */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shadow-blue-500/30">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <div className="flex items-center gap-1.5 cursor-pointer">
-            <span className="font-bold text-sm text-slate-900">{currentWorkspaceName}</span>
-            <span className="px-1.5 py-0.2 rounded-md bg-blue-50 text-[10px] font-bold text-blue-600 border border-blue-200">
-              Pro
-            </span>
-            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Right Search, Notification & User Avatar */}
-        <div className="flex items-center gap-3">
-          <button className="p-2 text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </button>
-
-          <div className="relative">
-            <button className="p-2 text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white"></span>
-          </div>
-
-          <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-slate-100">
-            <img
-              src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userName)}`}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      </header>
-
+    <div className="bg-[#f8faff] text-slate-800 font-sans pb-12 antialiased">
       {/* Main Container: Mobile phone max-w-md, Desktop spacious max-w-5xl */}
-      <main className="max-w-md md:max-w-5xl mx-auto px-4 md:px-6 pt-5 space-y-6">
+      <main className="max-w-md md:max-w-5xl mx-auto px-1 sm:px-4 md:px-6 pt-2 sm:pt-4 space-y-5">
         {/* Greetings Section */}
         <div className="flex items-start justify-between">
           <div>
@@ -531,53 +484,16 @@ export default function MobileDashboard({ user }: { user: any }) {
         </section>
       </main>
 
-      {/* Floating Action Button (Blue + button) */}
-      <div className="fixed bottom-20 right-6 z-40 max-w-md mx-auto">
+      {/* Floating Action Button on Mobile */}
+      <div className="fixed bottom-20 right-5 z-20 md:hidden">
         <button
           onClick={() => setIsNewTaskOpen(true)}
-          className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-90 text-white flex items-center justify-center text-2xl font-light shadow-xl shadow-blue-600/40 transition-all cursor-pointer"
+          className="w-13 h-13 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-90 text-white flex items-center justify-center text-2xl font-light shadow-lg shadow-blue-600/40 transition-all cursor-pointer"
+          title="Create task"
         >
           +
         </button>
       </div>
-
-      {/* Bottom Navigation Bar - Only on Mobile */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/80 max-w-md mx-auto flex items-center justify-around py-2.5 px-3 shadow-lg">
-        <a href="/dashboard" className="flex flex-col items-center gap-1 text-blue-600">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z" />
-          </svg>
-          <span className="text-[10px] font-bold">Dashboard</span>
-        </a>
-
-        <a href="/tasks" className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <span className="text-[10px] font-medium">Tasks</span>
-        </a>
-
-        <a href="/projects" className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-          </svg>
-          <span className="text-[10px] font-medium">Projects</span>
-        </a>
-
-        <a href="/dashboard" className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          <span className="text-[10px] font-medium">Analytics</span>
-        </a>
-
-        <a href="/settings" className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-          <span className="text-[10px] font-medium">Menu</span>
-        </a>
-      </nav>
 
       {/* Quick Create Task Modal */}
       {isNewTaskOpen && (
