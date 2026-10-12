@@ -50,14 +50,6 @@ export default function TaskBoard() {
   const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'table'>('kanban');
   const [activeMobileLane, setActiveMobileLane] = useState<Task['status']>('todo');
 
-  const scrollToLane = (status: Task['status']) => {
-    setActiveMobileLane(status);
-    const el = document.getElementById(`kanban-col-${status}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  };
-
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -324,25 +316,27 @@ export default function TaskBoard() {
         <>
           {/* VIEW 1: KANBAN BOARD */}
           {viewMode === 'kanban' && (
-            <div className="space-y-3">
-              {/* Mobile Lane Selector Tabs */}
-              <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-none">
+            <div className="space-y-4 w-full">
+              {/* Mobile Lane Tabs (Full width segmented control) */}
+              <div className="md:hidden grid grid-cols-4 gap-1 p-1 bg-slate-200/70 rounded-2xl w-full">
                 {COLUMNS.map((col) => {
                   const count = filteredTasks.filter((t) => t.status === col.id).length;
                   const isSelected = activeMobileLane === col.id;
                   return (
                     <button
                       key={col.id}
-                      onClick={() => scrollToLane(col.id)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
+                      onClick={() => setActiveMobileLane(col.id)}
+                      className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
                         isSelected
-                          ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                          ? 'bg-white text-blue-600 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white' : col.dotColor}`}></span>
-                      <span>{col.label}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                      <div className="flex items-center gap-1">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${col.dotColor}`}></span>
+                        <span className="truncate text-[11px]">{col.label}</span>
+                      </div>
+                      <span className={`text-[10px] font-extrabold ${isSelected ? 'text-blue-600' : 'text-slate-400'}`}>
                         {count}
                       </span>
                     </button>
@@ -350,32 +344,21 @@ export default function TaskBoard() {
                 })}
               </div>
 
-              {/* Swipeable Columns */}
-              <div
-                onScroll={(e) => {
-                  const container = e.currentTarget;
-                  const scrollLeft = container.scrollLeft;
-                  const colWidth = 300;
-                  const index = Math.round(scrollLeft / colWidth);
-                  if (COLUMNS[index] && COLUMNS[index].id !== activeMobileLane) {
-                    setActiveMobileLane(COLUMNS[index].id);
-                  }
-                }}
-                className="flex md:grid md:grid-cols-2 xl:grid-cols-4 gap-4 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory pb-4 md:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0"
-              >
+              {/* Columns Container: Active lane on mobile, full 4 columns grid on desktop */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
                 {COLUMNS.map((column) => {
                   const columnTasks = filteredTasks.filter((t) => t.status === column.id);
+                  const isVisibleOnMobile = activeMobileLane === column.id;
 
                   return (
                     <div
                       key={column.id}
-                      id={`kanban-col-${column.id}`}
-                      className="w-[84vw] max-w-[320px] shrink-0 snap-center md:w-auto md:shrink flex flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs min-h-[480px]"
+                      className={`${isVisibleOnMobile ? 'flex' : 'hidden md:flex'} flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[450px] w-full`}
                     >
                       {/* Column Header */}
                       <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
                         <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${column.dotColor}`}></span>
+                          <span className={`w-2.5 h-2.5 rounded-full ${column.dotColor}`}></span>
                           <h2 className="font-bold text-xs text-slate-800">{column.label}</h2>
                         </div>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${column.badgeBg}`}>
@@ -386,7 +369,7 @@ export default function TaskBoard() {
                       {/* Task Cards */}
                       <div className="space-y-2.5 flex-1 overflow-y-auto">
                         {columnTasks.length === 0 ? (
-                          <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center text-xs text-slate-400 font-medium">
+                          <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center text-xs text-slate-400 font-medium">
                             No tasks in this lane
                           </div>
                         ) : (
@@ -431,7 +414,7 @@ export default function TaskBoard() {
                                     value={task.status}
                                     onClick={(e) => e.stopPropagation()}
                                     onChange={(e) => handleStatusChange(task.id, e.target.value as Task['status'])}
-                                    className="text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-lg px-2 py-0.5"
+                                    className="text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-lg px-2 py-0.5 cursor-pointer"
                                   >
                                     {COLUMNS.map((c) => (
                                       <option key={c.id} value={c.id}>
