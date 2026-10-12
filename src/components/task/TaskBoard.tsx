@@ -48,6 +48,15 @@ export default function TaskBoard() {
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'table'>('kanban');
+  const [activeMobileLane, setActiveMobileLane] = useState<Task['status']>('todo');
+
+  const scrollToLane = (status: Task['status']) => {
+    setActiveMobileLane(status);
+    const el = document.getElementById(`kanban-col-${status}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  };
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -221,8 +230,9 @@ export default function TaskBoard() {
   return (
     <div className="space-y-6">
       {/* Top Controls Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <div className="flex flex-wrap items-center gap-2.5">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        {/* Row 1 on mobile: View mode switcher & New Task action button */}
+        <div className="flex items-center justify-between gap-2">
           {/* View Mode Toggle */}
           <div className="flex items-center bg-slate-100 p-1 rounded-xl">
             <button
@@ -251,11 +261,22 @@ export default function TaskBoard() {
             </button>
           </div>
 
+          {/* Action Button on Mobile */}
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="sm:hidden flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
+          >
+            <span>+ New</span>
+          </button>
+        </div>
+
+        {/* Row 2 on mobile: Project Filter & Search input; Inline on desktop */}
+        <div className="flex items-center gap-2 flex-1 sm:justify-end">
           {/* Project Filter */}
           <select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
-            className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-600"
+            className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 sm:px-3 py-2 focus:outline-none focus:border-blue-600 flex-1 sm:flex-none max-w-[170px] sm:max-w-[200px] truncate"
           >
             <option value="all">All Projects ({tasks.length})</option>
             {projects.map((p) => (
@@ -266,13 +287,13 @@ export default function TaskBoard() {
           </select>
 
           {/* Search */}
-          <div className="relative">
+          <div className="relative flex-1 sm:w-48 sm:flex-none">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tasks..."
-              className="bg-slate-50 text-xs text-slate-800 border border-slate-200 rounded-xl pl-3 pr-7 py-2 focus:outline-none focus:border-blue-600 w-40 md:w-52 font-medium"
+              className="bg-slate-50 text-xs text-slate-800 border border-slate-200 rounded-xl pl-3 pr-7 py-2 focus:outline-none focus:border-blue-600 w-full font-medium"
             />
             {searchQuery && (
               <button
@@ -283,15 +304,15 @@ export default function TaskBoard() {
               </button>
             )}
           </div>
-        </div>
 
-        {/* Action Button */}
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer"
-        >
-          <span>+ New Task</span>
-        </button>
+          {/* Action Button on Desktop */}
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="hidden sm:flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
+          >
+            <span>+ New Task</span>
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -303,141 +324,187 @@ export default function TaskBoard() {
         <>
           {/* VIEW 1: KANBAN BOARD */}
           {viewMode === 'kanban' && (
-            <div className="flex md:grid md:grid-cols-2 xl:grid-cols-4 gap-4 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory pb-4 md:pb-0 -mx-2 px-2 sm:mx-0 sm:px-0">
-              {COLUMNS.map((column) => {
-                const columnTasks = filteredTasks.filter((t) => t.status === column.id);
-
-                return (
-                  <div
-                    key={column.id}
-                    className="w-[85vw] max-w-[320px] shrink-0 snap-center md:w-auto md:shrink flex flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[500px]"
-                  >
-                    {/* Column Header */}
-                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${column.dotColor}`}></span>
-                        <h2 className="font-bold text-xs text-slate-800">{column.label}</h2>
-                      </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${column.badgeBg}`}>
-                        {columnTasks.length}
+            <div className="space-y-3">
+              {/* Mobile Lane Selector Tabs */}
+              <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-1 -mx-2 px-2 scrollbar-none">
+                {COLUMNS.map((col) => {
+                  const count = filteredTasks.filter((t) => t.status === col.id).length;
+                  const isSelected = activeMobileLane === col.id;
+                  return (
+                    <button
+                      key={col.id}
+                      onClick={() => scrollToLane(col.id)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white' : col.dotColor}`}></span>
+                      <span>{col.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                        {count}
                       </span>
-                    </div>
+                    </button>
+                  );
+                })}
+              </div>
 
-                    {/* Task Cards */}
-                    <div className="space-y-2.5 flex-1 overflow-y-auto">
-                      {columnTasks.length === 0 ? (
-                        <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center text-xs text-slate-400 font-medium">
-                          No tasks in this lane
+              {/* Swipeable Columns */}
+              <div
+                onScroll={(e) => {
+                  const container = e.currentTarget;
+                  const scrollLeft = container.scrollLeft;
+                  const colWidth = 300;
+                  const index = Math.round(scrollLeft / colWidth);
+                  if (COLUMNS[index] && COLUMNS[index].id !== activeMobileLane) {
+                    setActiveMobileLane(COLUMNS[index].id);
+                  }
+                }}
+                className="flex md:grid md:grid-cols-2 xl:grid-cols-4 gap-4 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory pb-4 md:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0"
+              >
+                {COLUMNS.map((column) => {
+                  const columnTasks = filteredTasks.filter((t) => t.status === column.id);
+
+                  return (
+                    <div
+                      key={column.id}
+                      id={`kanban-col-${column.id}`}
+                      className="w-[84vw] max-w-[320px] shrink-0 snap-center md:w-auto md:shrink flex flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs min-h-[480px]"
+                    >
+                      {/* Column Header */}
+                      <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${column.dotColor}`}></span>
+                          <h2 className="font-bold text-xs text-slate-800">{column.label}</h2>
                         </div>
-                      ) : (
-                        columnTasks.map((task) => (
-                          <div
-                            key={task.id}
-                            onClick={() => openTaskDetail(task)}
-                            className="group p-3.5 bg-white hover:border-blue-400 border border-slate-200/90 rounded-2xl transition-all shadow-xs hover:shadow-md cursor-pointer relative"
-                          >
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                              <span
-                                className="text-[9px] font-bold px-2 py-0.5 rounded-md text-white"
-                                style={{ backgroundColor: task.projectColor || '#2563eb' }}
-                              >
-                                {task.projectName || 'General'}
-                              </span>
-                              {getPriorityBadge(task.priority)}
-                            </div>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${column.badgeBg}`}>
+                          {columnTasks.length}
+                        </span>
+                      </div>
 
-                            <h3 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-                              {task.title}
-                            </h3>
-
-                            {task.description && (
-                              <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">
-                                {task.description}
-                              </p>
-                            )}
-
-                            {/* Card Footer */}
-                            <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
-                              <div>
-                                {task.dueDate ? (
-                                  <span className="text-slate-500">📅 {task.dueDate}</span>
-                                ) : (
-                                  <span>No date</span>
-                                )}
-                              </div>
-
-                              <div>
-                                <select
-                                  value={task.status}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) => handleStatusChange(task.id, e.target.value as Task['status'])}
-                                  className="text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-lg px-2 py-0.5"
-                                >
-                                  {COLUMNS.map((c) => (
-                                    <option key={c.id} value={c.id}>
-                                      → {c.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
+                      {/* Task Cards */}
+                      <div className="space-y-2.5 flex-1 overflow-y-auto">
+                        {columnTasks.length === 0 ? (
+                          <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center text-xs text-slate-400 font-medium">
+                            No tasks in this lane
                           </div>
-                        ))
-                      )}
+                        ) : (
+                          columnTasks.map((task) => (
+                            <div
+                              key={task.id}
+                              onClick={() => openTaskDetail(task)}
+                              className="group p-3.5 bg-white hover:border-blue-400 border border-slate-200/90 rounded-2xl transition-all shadow-xs hover:shadow-md cursor-pointer relative"
+                            >
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <span
+                                  className="text-[9px] font-bold px-2 py-0.5 rounded-md text-white"
+                                  style={{ backgroundColor: task.projectColor || '#2563eb' }}
+                                >
+                                  {task.projectName || 'General'}
+                                </span>
+                                {getPriorityBadge(task.priority)}
+                              </div>
+
+                              <h3 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                {task.title}
+                              </h3>
+
+                              {task.description && (
+                                <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">
+                                  {task.description}
+                                </p>
+                              )}
+
+                              {/* Card Footer */}
+                              <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
+                                <div>
+                                  {task.dueDate ? (
+                                    <span className="text-slate-500">📅 {task.dueDate}</span>
+                                  ) : (
+                                    <span>No date</span>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <select
+                                    value={task.status}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => handleStatusChange(task.id, e.target.value as Task['status'])}
+                                    className="text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-lg px-2 py-0.5"
+                                  >
+                                    {COLUMNS.map((c) => (
+                                      <option key={c.id} value={c.id}>
+                                        → {c.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
 
           {/* VIEW 2: LIST VIEW */}
           {viewMode === 'list' && (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-2xs">
-              {filteredTasks.map((task) => (
-                <div
-                  key={task.id}
-                  onClick={() => openTaskDetail(task)}
-                  className="p-3.5 hover:bg-slate-50 flex items-center justify-between gap-4 cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStatusChange(task.id, task.status === 'done' ? 'todo' : 'done');
-                      }}
-                      className={`w-4 h-4 rounded-md border flex items-center justify-center text-xs transition-colors ${
-                        task.status === 'done'
-                          ? 'bg-emerald-600 border-emerald-600 text-white'
-                          : 'border-slate-300 hover:border-slate-500'
-                      }`}
-                    >
-                      {task.status === 'done' && '✓'}
-                    </button>
-                    <div>
-                      <p className={`text-xs font-bold text-slate-900 ${task.status === 'done' ? 'line-through text-slate-400' : ''}`}>
-                        {task.title}
-                      </p>
-                      <p className="text-[11px] text-slate-500 line-clamp-1">{task.description || 'No description'}</p>
+              {filteredTasks.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400 font-medium">No tasks found</div>
+              ) : (
+                filteredTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    onClick={() => openTaskDetail(task)}
+                    className="p-3 sm:p-3.5 hover:bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-start sm:items-center gap-3 min-w-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStatusChange(task.id, task.status === 'done' ? 'todo' : 'done');
+                        }}
+                        className={`w-4 h-4 rounded-md border flex items-center justify-center text-xs transition-colors shrink-0 mt-0.5 sm:mt-0 ${
+                          task.status === 'done'
+                            ? 'bg-emerald-600 border-emerald-600 text-white'
+                            : 'border-slate-300 hover:border-slate-500'
+                        }`}
+                      >
+                        {task.status === 'done' && '✓'}
+                      </button>
+                      <div className="min-w-0">
+                        <p className={`text-xs font-bold text-slate-900 truncate ${task.status === 'done' ? 'line-through text-slate-400' : ''}`}>
+                          {task.title}
+                        </p>
+                        {task.description && (
+                          <p className="text-[11px] text-slate-500 line-clamp-1">{task.description}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pl-7 sm:pl-0 shrink-0">
+                      <span className="text-[10px] px-2 py-0.5 rounded-md text-white font-bold" style={{ backgroundColor: task.projectColor || '#2563eb' }}>
+                        {task.projectName || 'General'}
+                      </span>
+                      {getPriorityBadge(task.priority)}
+                      <span className="text-[10px] font-semibold text-slate-400">{task.dueDate || 'No date'}</span>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <span className="text-[10px] px-2 py-0.5 rounded-md text-white font-bold" style={{ backgroundColor: task.projectColor || '#2563eb' }}>
-                      {task.projectName}
-                    </span>
-                    {getPriorityBadge(task.priority)}
-                    <span className="text-[10px] font-semibold text-slate-400">{task.dueDate || 'No date'}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
 
           {/* VIEW 3: TABLE VIEW */}
           {viewMode === 'table' && (
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-2xs">
-              <table className="w-full text-left text-xs text-slate-700">
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-2xs -mx-2 sm:mx-0">
+              <table className="w-full min-w-[560px] text-left text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
                   <tr>
                     <th className="p-3.5">Task</th>
@@ -651,7 +718,7 @@ export default function TaskBoard() {
 
               <div>
                 <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Move Lane</h4>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {COLUMNS.map((col) => (
                     <button
                       key={col.id}
@@ -672,7 +739,7 @@ export default function TaskBoard() {
               </div>
 
               {/* Comments */}
-              <div className="pt-4 border-t border-slate-100 space-y-3">
+              <div className="pt-4 border-t border-slate-100 space-y-3 pb-24 sm:pb-6">
                 <h4 className="text-xs font-bold text-slate-800">Comments ({comments.length})</h4>
                 <div className="space-y-2">
                   {comments.map((c) => (
