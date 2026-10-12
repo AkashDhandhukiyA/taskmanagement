@@ -71,7 +71,7 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
 
   // Click outside to close dropdowns
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowSearchDropdown(false);
       }
@@ -80,7 +80,11 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
@@ -209,34 +213,54 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
 
           {/* Notifications Dropdown Panel (Responsive) */}
           {showNotificationPanel && (
-            <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 space-y-3 animate-in fade-in duration-100">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span className="font-bold text-xs text-slate-900">Live Notifications</span>
-                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                  {notifications.length} recent
-                </span>
-              </div>
+            <>
+              {/* Mobile Backdrop */}
+              <div
+                onClick={() => setShowNotificationPanel(false)}
+                className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-40 sm:hidden"
+              />
 
-              <div className="space-y-2 max-h-72 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <p className="text-center py-4 text-xs text-slate-400">No notifications yet</p>
-                ) : (
-                  notifications.map((n) => (
-                    <a
-                      key={n.id}
-                      href={n.link}
-                      className="block p-2.5 rounded-xl hover:bg-slate-50 transition-colors border border-slate-100"
-                    >
-                      <div className="flex items-start justify-between gap-1">
-                        <p className="text-xs font-bold text-slate-800">{n.title}</p>
-                        <span className="text-[9px] text-slate-400 font-medium shrink-0">{n.time}</span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{n.desc}</p>
-                    </a>
-                  ))
-                )}
+              <div className="fixed inset-x-3 top-18 sm:top-full sm:absolute sm:inset-x-auto sm:right-0 sm:mt-2 w-auto sm:w-85 max-w-sm sm:max-w-none mx-auto sm:mx-0 bg-white border border-slate-200/90 rounded-2xl shadow-2xl sm:shadow-xl p-4 z-50 space-y-3 animate-in fade-in duration-100">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs text-slate-900">Live Notifications</span>
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      {notifications.length} recent
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowNotificationPanel(false)}
+                    className="p-1 text-slate-400 hover:text-slate-600 text-xs sm:hidden rounded-lg hover:bg-slate-50 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-[60vh] sm:max-h-72 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-400 flex flex-col items-center gap-1.5">
+                      <span className="text-xl">🔔</span>
+                      <p>No notifications yet</p>
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <a
+                        key={n.id}
+                        href={n.link}
+                        onClick={() => setShowNotificationPanel(false)}
+                        className="block p-3 rounded-xl hover:bg-slate-50 transition-colors border border-slate-100 hover:border-blue-200"
+                      >
+                        <div className="flex items-start justify-between gap-1.5">
+                          <p className="text-xs font-bold text-slate-800">{n.title}</p>
+                          <span className="text-[9px] text-slate-400 font-medium shrink-0">{n.time}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">{n.desc}</p>
+                      </a>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
