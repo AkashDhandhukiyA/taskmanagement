@@ -15,7 +15,7 @@
 		{
 			"binding": "DB",
 			"database_name": "task-management-db",
-			"database_id": "task-management-db-local",
+			"database_id": "4157e940-5d14-48d4-b0cf-305e3454fdf9",
 			"migrations_dir": "./src/db/migrations"
 		}
 	]
