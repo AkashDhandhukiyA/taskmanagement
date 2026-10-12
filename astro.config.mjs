@@ -13,29 +13,9 @@ export default defineConfig({
   session: false,
 
   vite: {
-    plugins: [tailwindcss()],
-    optimizeDeps: {
-      exclude: [
-        'astro:middleware',
-        'astro/middleware',
-        'react',
-        'react-dom',
-        'react/jsx-runtime',
-        'react/jsx-dev-runtime',
-        '@astrojs/react/server.js'
-      ]
-    },
-    ssr: {
-      noExternal: [
-        'astro:middleware',
-        'react',
-        'react-dom',
-        'react/jsx-runtime',
-        'react/jsx-dev-runtime',
-        '@astrojs/react/server.js'
-      ]
-    }
+    plugins: [tailwindcss()]
   },
 
   integrations: [react()]
 });
+
