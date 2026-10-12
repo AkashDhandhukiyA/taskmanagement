@@ -15,17 +15,25 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     optimizeDeps: {
-      exclude: ['astro:middleware', 'astro/middleware'],
-      include: [
-        '@astrojs/react/server.js',
+      exclude: [
+        'astro:middleware',
+        'astro/middleware',
         'react',
         'react-dom',
         'react/jsx-runtime',
-        'react/jsx-dev-runtime'
+        'react/jsx-dev-runtime',
+        '@astrojs/react/server.js'
       ]
     },
     ssr: {
-      noExternal: ['astro:middleware']
+      noExternal: [
+        'astro:middleware',
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        '@astrojs/react/server.js'
+      ]
     }
   },
 
