@@ -33,7 +33,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
       .where(eq(workspaceMembers.userId, auth.userId))
       .all();
 
-    return successResponse({ workspaces: userWorkspaces });
+    const seenWorkspaceIds = new Set<string>();
+    const deduplicatedWorkspaces = userWorkspaces.filter((w) => {
+      if (seenWorkspaceIds.has(w.id)) return false;
+      seenWorkspaceIds.add(w.id);
+      return true;
+    });
+
+    return successResponse({ workspaces: deduplicatedWorkspaces });
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to fetch workspaces', 500);
   }

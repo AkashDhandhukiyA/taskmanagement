@@ -58,7 +58,15 @@ export const GET: APIRoute = async ({ request, locals }) => {
       .where(eq(workspaceMembers.userId, auth.userId))
       .all();
 
-    return successResponse({ projects: userProjects });
+    // Deduplicate in case of duplicate memberships
+    const seen = new Set<string>();
+    const deduplicatedProjects = userProjects.filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+
+    return successResponse({ projects: deduplicatedProjects });
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to fetch projects', 500);
   }
@@ -118,8 +126,14 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     const { id, name, description, color } = result.data;
     const db = getDb(locals);
 
-    const existing = await db.select().from(projects).where(eq(projects.id, id)).get();
-    if (!existing) return errorResponse('Project not found', 404);
+    const existing = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
+      .where(and(eq(projects.id, id), eq(workspaceMembers.userId, auth.userId)))
+      .get();
+
+    if (!existing) return errorResponse('Project not found or access denied', 404);
 
     await db
       .update(projects)
@@ -146,6 +160,16 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
     if (!id) return errorResponse('Project ID is required', 400);
 
     const db = getDb(locals);
+
+    const existing = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
+      .where(and(eq(projects.id, id), eq(workspaceMembers.userId, auth.userId)))
+      .get();
+
+    if (!existing) return errorResponse('Project not found or access denied', 404);
+
     await db.delete(projects).where(eq(projects.id, id));
     return successResponse({ message: 'Project deleted successfully' });
   } catch (err: any) {

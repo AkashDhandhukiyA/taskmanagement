@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { getDb, users, workspaces, workspaceMembers, projects, tasks } from '../../../db';
+import { getDb, users, workspaces, workspaceMembers, projects } from '../../../db';
 import { hashPassword, createToken } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
 import { eq } from 'drizzle-orm';
@@ -71,20 +71,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
       description: 'Your default project workspace',
       color: '#6366f1',
       createdAt: now,
-    });
-
-    // Create sample starter task
-    await db.insert(tasks).values({
-      id: crypto.randomUUID(),
-      projectId,
-      title: 'Welcome to TaskFlow! 🎉',
-      description: 'Explore the Kanban board, create workspaces, assign tasks, and track team analytics.',
-      priority: 'high',
-      status: 'in_progress',
-      assignedTo: userId,
-      dueDate: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
-      createdAt: now,
-      updatedAt: now,
     });
 
     const token = await createToken({ userId, email: email.toLowerCase(), name });

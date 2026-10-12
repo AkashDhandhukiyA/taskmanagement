@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { getDb, comments, users } from '../../../db';
+import { getDb, comments, users, tasks, projects, workspaceMembers } from '../../../db';
 import { getUserFromRequest } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, and } from 'drizzle-orm';
 
 const createCommentSchema = z.object({
   taskId: z.string().min(1, 'Task ID is required'),
@@ -20,6 +20,18 @@ export const GET: APIRoute = async ({ request, locals }) => {
     if (!taskId) return errorResponse('Task ID is required', 400);
 
     const db = getDb(locals);
+
+    // Verify task belongs to a workspace user has access to
+    const taskAccess = await db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .innerJoin(projects, eq(projects.id, tasks.projectId))
+      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
+      .where(and(eq(tasks.id, taskId), eq(workspaceMembers.userId, auth.userId)))
+      .get();
+
+    if (!taskAccess) return errorResponse('Task not found or access denied', 404);
+
     const commentList = await db
       .select({
         id: comments.id,
@@ -53,6 +65,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const { taskId, message } = result.data;
     const db = getDb(locals);
+
+    // Verify task belongs to a workspace user has access to
+    const taskAccess = await db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .innerJoin(projects, eq(projects.id, tasks.projectId))
+      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
+      .where(and(eq(tasks.id, taskId), eq(workspaceMembers.userId, auth.userId)))
+      .get();
+
+    if (!taskAccess) return errorResponse('Task not found or access denied', 404);
+
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 

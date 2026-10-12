@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 
 export interface Task {
   id: string;
@@ -145,6 +146,23 @@ export default function TaskBoard() {
       console.error(err);
       fetchData();
     }
+  };
+
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    const newStatus = destination.droppableId as Task['status'];
+    const taskId = draggableId;
+
+    handleStatusChange(taskId, newStatus);
   };
 
   const handleDeleteTask = async (taskId: string) => {
@@ -345,93 +363,130 @@ export default function TaskBoard() {
               </div>
 
               {/* Columns Container: Active lane on mobile, full 4 columns grid on desktop */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
-                {COLUMNS.map((column) => {
-                  const columnTasks = filteredTasks.filter((t) => t.status === column.id);
-                  const isVisibleOnMobile = activeMobileLane === column.id;
+              <DragDropContext onDragEnd={onDragEnd}>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
+                  {COLUMNS.map((column) => {
+                    const columnTasks = filteredTasks.filter((t) => t.status === column.id);
+                    const isVisibleOnMobile = activeMobileLane === column.id;
 
-                  return (
-                    <div
-                      key={column.id}
-                      className={`${isVisibleOnMobile ? 'flex' : 'hidden md:flex'} flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[450px] w-full`}
-                    >
-                      {/* Column Header */}
-                      <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2.5 h-2.5 rounded-full ${column.dotColor}`}></span>
-                          <h2 className="font-bold text-xs text-slate-800">{column.label}</h2>
-                        </div>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${column.badgeBg}`}>
-                          {columnTasks.length}
-                        </span>
-                      </div>
-
-                      {/* Task Cards */}
-                      <div className="space-y-2.5 flex-1 overflow-y-auto">
-                        {columnTasks.length === 0 ? (
-                          <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center text-xs text-slate-400 font-medium">
-                            No tasks in this lane
+                    return (
+                      <div
+                        key={column.id}
+                        className={`${isVisibleOnMobile ? 'flex' : 'hidden md:flex'} flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[480px] w-full`}
+                      >
+                        {/* Column Header */}
+                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${column.dotColor}`}></span>
+                            <h2 className="font-bold text-xs text-slate-800">{column.label}</h2>
                           </div>
-                        ) : (
-                          columnTasks.map((task) => (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${column.badgeBg}`}>
+                            {columnTasks.length}
+                          </span>
+                        </div>
+
+                        {/* Droppable Lane */}
+                        <Droppable droppableId={column.id}>
+                          {(provided, snapshot) => (
                             <div
-                              key={task.id}
-                              onClick={() => openTaskDetail(task)}
-                              className="group p-3.5 bg-white hover:border-blue-400 border border-slate-200/90 rounded-2xl transition-all shadow-xs hover:shadow-md cursor-pointer relative"
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className={`space-y-2.5 flex-1 overflow-y-auto min-h-[140px] rounded-xl p-1 transition-all ${
+                                snapshot.isDraggingOver
+                                  ? 'bg-blue-50/80 border-2 border-blue-400 border-dashed shadow-inner'
+                                  : 'border-2 border-transparent'
+                              }`}
                             >
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <span
-                                  className="text-[9px] font-bold px-2 py-0.5 rounded-md text-white"
-                                  style={{ backgroundColor: task.projectColor || '#2563eb' }}
-                                >
-                                  {task.projectName || 'General'}
-                                </span>
-                                {getPriorityBadge(task.priority)}
-                              </div>
+                              {columnTasks.length === 0 && !snapshot.isDraggingOver ? (
+                                <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center text-xs text-slate-400 font-medium">
+                                  No tasks in this lane
+                                </div>
+                              ) : (
+                                columnTasks.map((task, index) => (
+                                  <Draggable key={task.id} draggableId={task.id} index={index}>
+                                    {(dragProvided, dragSnapshot) => (
+                                      <div
+                                        ref={dragProvided.innerRef}
+                                        {...dragProvided.draggableProps}
+                                        {...dragProvided.dragHandleProps}
+                                        onClick={() => openTaskDetail(task)}
+                                        className={`group p-3.5 bg-white rounded-2xl transition-all shadow-xs relative cursor-grab active:cursor-grabbing select-none ${
+                                          dragSnapshot.isDragging
+                                            ? 'shadow-2xl border-2 border-blue-500 ring-4 ring-blue-500/20 rotate-1 scale-[1.02] z-50'
+                                            : 'hover:border-blue-400 border border-slate-200/90 hover:shadow-md'
+                                        }`}
+                                      >
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                          <span
+                                            className="text-[9px] font-bold px-2 py-0.5 rounded-md text-white"
+                                            style={{ backgroundColor: task.projectColor || '#2563eb' }}
+                                          >
+                                            {task.projectName || 'General'}
+                                          </span>
+                                          <div className="flex items-center gap-1.5">
+                                            {getPriorityBadge(task.priority)}
+                                            <span className="text-slate-300 group-hover:text-slate-500 text-xs font-bold leading-none" title="Drag task">
+                                              ⠿
+                                            </span>
+                                          </div>
+                                        </div>
 
-                              <h3 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-                                {task.title}
-                              </h3>
+                                        <h3 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                          {task.title}
+                                        </h3>
 
-                              {task.description && (
-                                <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">
-                                  {task.description}
-                                </p>
+                                        {task.description && (
+                                          <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">
+                                            {task.description}
+                                          </p>
+                                        )}
+
+                                        {/* Card Footer */}
+                                        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
+                                          <div>
+                                            {task.dueDate ? (
+                                              <span className="text-slate-500">📅 {task.dueDate}</span>
+                                            ) : (
+                                              <span>No date</span>
+                                            )}
+                                          </div>
+
+                                          <div className="flex items-center gap-1.5">
+                                            {task.assigneeAvatar && (
+                                              <img
+                                                src={task.assigneeAvatar}
+                                                alt=""
+                                                className="w-4 h-4 rounded-full"
+                                              />
+                                            )}
+                                            <select
+                                              value={task.status}
+                                              onClick={(e) => e.stopPropagation()}
+                                              onChange={(e) => handleStatusChange(task.id, e.target.value as Task['status'])}
+                                              className="text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-lg px-2 py-0.5 cursor-pointer"
+                                            >
+                                              {COLUMNS.map((c) => (
+                                                <option key={c.id} value={c.id}>
+                                                  → {c.label}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))
                               )}
-
-                              {/* Card Footer */}
-                              <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
-                                <div>
-                                  {task.dueDate ? (
-                                    <span className="text-slate-500">📅 {task.dueDate}</span>
-                                  ) : (
-                                    <span>No date</span>
-                                  )}
-                                </div>
-
-                                <div>
-                                  <select
-                                    value={task.status}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => handleStatusChange(task.id, e.target.value as Task['status'])}
-                                    className="text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-lg px-2 py-0.5 cursor-pointer"
-                                  >
-                                    {COLUMNS.map((c) => (
-                                      <option key={c.id} value={c.id}>
-                                        → {c.label}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
+                              {provided.placeholder}
                             </div>
-                          ))
-                        )}
+                          )}
+                        </Droppable>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </DragDropContext>
             </div>
           )}
 

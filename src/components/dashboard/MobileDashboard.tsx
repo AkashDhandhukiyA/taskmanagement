@@ -67,51 +67,62 @@ export default function MobileDashboard({ user }: { user: any }) {
     }
   };
 
-  const totalTasks = tasks.length || 25;
-  const completedCount = tasks.filter((t) => t.status === 'done').length || 17;
-  const inReviewCount = tasks.filter((t) => t.status === 'review').length || 8;
-  const activeCount = tasks.filter((t) => t.status === 'todo' || t.status === 'in_progress').length || 42;
-  const overdueCount = tasks.filter((t) => t.priority === 'urgent' || (t.dueDate && t.dueDate < new Date().toISOString().split('T')[0])).length || 2;
-  const completionPercentage = Math.round((completedCount / (totalTasks || 1)) * 100) || 68;
+  const todayStr = new Date().toISOString().split('T')[0];
 
-  const currentWorkspaceName = workspaces[0]?.name || 'Acme Corp';
-  const userName = user?.name ? user.name.split(' ')[0] : 'Maya';
+  const totalTasks = tasks.length;
+  const completedCount = tasks.filter((t) => t.status === 'done').length;
+  const inReviewCount = tasks.filter((t) => t.status === 'review').length;
+  const activeCount = tasks.filter((t) => t.status === 'todo' || t.status === 'in_progress').length;
+  const overdueCount = tasks.filter((t) => t.dueDate && t.dueDate < todayStr && t.status !== 'done').length;
+  const dueTodayCount = tasks.filter((t) => t.dueDate === todayStr && t.status !== 'done').length;
+  const completionPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+
+  const currentWorkspaceName = workspaces[0]?.name || 'My Workspace';
+  const userName = user?.name ? user.name.split(' ')[0] : 'User';
+
+  // Real upcoming tasks (not done, prioritized by due date)
+  const upcomingTasks = tasks
+    .filter((t) => t.status !== 'done')
+    .sort((a, b) => {
+      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      return 0;
+    })
+    .slice(0, 5);
 
   return (
     <div className="bg-[#f8faff] text-slate-800 font-sans pb-12 antialiased">
-      {/* Main Container: Mobile phone max-w-md, Desktop spacious max-w-5xl */}
+      {/* Main Container */}
       <main className="max-w-md md:max-w-5xl mx-auto px-1 sm:px-4 md:px-6 pt-2 sm:pt-4 space-y-5">
         {/* Greetings Section */}
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-black tracking-tight text-slate-900">
-                Good morning,<br />
+                Good day,<br />
                 {userName}
               </h1>
-              <span className="text-2xl animate-bounce">👋</span>
+              <span className="text-2xl">👋</span>
             </div>
             <p className="text-xs text-slate-500 mt-1.5 font-medium">
-              You have <strong className="text-slate-800 font-bold">6 tasks due today</strong> across 3 active workspaces.
+              You have <strong className="text-slate-800 font-bold">{dueTodayCount} task{dueTodayCount === 1 ? '' : 's'} due today</strong> across {workspaces.length} active workspace{workspaces.length === 1 ? '' : 's'}.
             </p>
           </div>
 
-          {/* Sprint Badge */}
+          {/* Workspace Badge */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100/70 border border-blue-200/60 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-            <span className="text-xs font-bold text-blue-900">Sprint 14</span>
+            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+            <span className="text-xs font-bold text-blue-900 truncate max-w-[140px]">{currentWorkspaceName}</span>
           </div>
         </div>
 
-        {/* Hero Card: Daily Focus / Sprint Pace */}
+        {/* Hero Card: Sprint Pace */}
         <div className="rounded-3xl bg-gradient-to-br from-[#eff5ff] via-[#f4f7fe] to-[#e8f0fe] p-5 border border-blue-100 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-lg bg-blue-200/80 text-[10px] font-black uppercase tracking-wider text-blue-800">
-                DAILY FOCUS
-              </span>
-              <span className="inline-flex items-center text-xs font-bold text-emerald-600">
-                📈 +12% this week
+                TASK PROGRESS
               </span>
             </div>
           </div>
@@ -122,21 +133,9 @@ export default function MobileDashboard({ user }: { user: any }) {
               <h2 className="text-xl font-black text-slate-900 tracking-tight">
                 {completedCount} of {totalTasks} Tasks Done
               </h2>
-              <p className="text-[11px] text-slate-500 font-medium max-w-[170px] leading-snug">
-                Velocity is trending 1.4x faster than last sprint
+              <p className="text-[11px] text-slate-500 font-medium max-w-[200px] leading-snug">
+                {totalTasks === 0 ? 'No tasks created yet in this workspace.' : `${completionPercentage}% overall completion rate.`}
               </p>
-
-              {/* Mini Badges */}
-              <div className="flex items-center gap-2 pt-3">
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-100/80 text-blue-800 text-[11px] font-bold">
-                  <span>⚡ 94</span>
-                  <span className="text-[9px] text-blue-600 font-normal">Score</span>
-                </div>
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-100/80 text-blue-800 text-[11px] font-bold">
-                  <span>⏱️ 4.2h</span>
-                  <span className="text-[9px] text-blue-600 font-normal">Focus</span>
-                </div>
-              </div>
             </div>
 
             {/* Circular Progress Meter */}
@@ -168,11 +167,11 @@ export default function MobileDashboard({ user }: { user: any }) {
 
           {/* Footer Bar inside Hero Card */}
           <div className="mt-5 pt-3 border-t border-blue-200/50 flex items-center justify-between text-[11px] font-bold">
-            <span className="text-slate-500">Sprint Completion Pace</span>
-            <span className="text-blue-600">Optimal Pace</span>
+            <span className="text-slate-500">Workspace Progress</span>
+            <span className="text-blue-600">{completedCount}/{totalTasks} Completed</span>
           </div>
           <div className="h-1.5 w-full bg-blue-100 rounded-full mt-1.5 overflow-hidden">
-            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${completionPercentage}%` }}></div>
+            <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${completionPercentage}%` }}></div>
           </div>
         </div>
 
@@ -180,7 +179,7 @@ export default function MobileDashboard({ user }: { user: any }) {
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-black text-sm text-slate-900 tracking-tight">Quick Operations</h3>
-            <span className="text-[10px] font-semibold text-slate-400">Press ⌘K for cmd palette</span>
+            <span className="text-[10px] font-semibold text-slate-400">Manage items</span>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -210,11 +209,11 @@ export default function MobileDashboard({ user }: { user: any }) {
           </div>
         </section>
 
-        {/* Workspace Pulse 2x2 Grid */}
+        {/* Workspace Pulse 2x2 Grid with 100% Real Numbers */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-black text-sm text-slate-900 tracking-tight">Workspace Pulse</h3>
-            <span className="text-[11px] font-semibold text-slate-400">Sprint 14 Analytics</span>
+            <span className="text-[11px] font-semibold text-slate-400">Real-time metrics</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -227,9 +226,8 @@ export default function MobileDashboard({ user }: { user: any }) {
               <div className="my-2">
                 <span className="text-2xl font-black text-slate-900">{activeCount}</span>
               </div>
-              <div className="flex items-center justify-between text-[10px] font-bold">
-                <span className="text-emerald-600">↑ +4 today</span>
-                <span className="text-blue-400 font-mono tracking-tighter">~~~~~</span>
+              <div className="text-[10px] font-medium text-slate-400">
+                To do or in progress
               </div>
             </div>
 
@@ -242,9 +240,8 @@ export default function MobileDashboard({ user }: { user: any }) {
               <div className="my-2">
                 <span className="text-2xl font-black text-slate-900">{inReviewCount}</span>
               </div>
-              <div className="flex items-center justify-between text-[10px] font-bold">
-                <span className="text-slate-400">Needs Signoff</span>
-                <span className="text-blue-300 font-mono tracking-tighter">~^~^~</span>
+              <div className="text-[10px] font-medium text-slate-400">
+                Awaiting review
               </div>
             </div>
 
@@ -257,9 +254,8 @@ export default function MobileDashboard({ user }: { user: any }) {
               <div className="my-2">
                 <span className="text-2xl font-black text-slate-900">{completedCount}</span>
               </div>
-              <div className="flex items-center justify-between text-[10px] font-bold">
-                <span className="text-emerald-600">📈 Record pace</span>
-                <span className="text-emerald-400 font-mono tracking-tighter">↗↗↗</span>
+              <div className="text-[10px] font-medium text-emerald-600">
+                Done
               </div>
             </div>
 
@@ -270,24 +266,21 @@ export default function MobileDashboard({ user }: { user: any }) {
                 <span className="w-6 h-6 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center text-xs font-black">!</span>
               </div>
               <div className="my-2">
-                <span className="text-2xl font-black text-rose-600">{overdueCount}</span>
+                <span className={`text-2xl font-black ${overdueCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{overdueCount}</span>
               </div>
-              <div className="flex items-center justify-between text-[10px] font-bold">
-                <span className="text-rose-500">High Priority</span>
-                <span className="w-3 h-3 rounded-full bg-rose-500/20 flex items-center justify-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
-                </span>
+              <div className="text-[10px] font-medium text-slate-400">
+                Past due date
               </div>
             </div>
           </div>
         </section>
 
-        {/* Upcoming Deadlines */}
+        {/* Real Upcoming Tasks */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h3 className="font-black text-sm text-slate-900 tracking-tight">Upcoming Deadlines</h3>
-              <span className="px-2 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px] font-black">3</span>
+              <span className="px-2 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px] font-black">{upcomingTasks.length}</span>
             </div>
             <a href="/tasks" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
               View Board →
@@ -295,191 +288,32 @@ export default function MobileDashboard({ user }: { user: any }) {
           </div>
 
           <div className="space-y-2.5">
-            {/* Deadline 1 */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-2xs space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs font-black shrink-0 mt-0.5">!</span>
-                  <div>
-                    <h4 className="font-bold text-xs text-slate-900">Design Design System v2...</h4>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span> PRISM-104 • Core Experience
-                    </p>
+            {upcomingTasks.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-white border border-slate-100 shadow-2xs text-center">
+                <p className="text-xs font-semibold text-slate-500">No pending deadlines. All tasks completed or none scheduled!</p>
+              </div>
+            ) : (
+              upcomingTasks.map((t) => (
+                <div key={t.id} className="p-4 rounded-2xl bg-white border border-slate-100 shadow-2xs space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1.5 ${t.priority === 'urgent' ? 'bg-rose-500' : t.priority === 'high' ? 'bg-amber-500' : 'bg-blue-500'}`}></span>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 truncate">{t.title}</h4>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5 truncate">
+                          {t.projectName || 'General Tasks'} • Status: {t.status}
+                        </p>
+                      </div>
+                    </div>
+                    {t.dueDate && (
+                      <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-600 shrink-0">
+                        {t.dueDate}
+                      </span>
+                    )}
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-100 text-[10px] font-bold text-rose-600 shrink-0">
-                  Due 5:00 PM
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                {/* Team Avatars */}
-                <div className="flex -space-x-1.5 overflow-hidden">
-                  <img className="inline-block h-6 w-6 rounded-full ring-2 ring-white" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop" alt="" />
-                  <img className="inline-block h-6 w-6 rounded-full ring-2 ring-white" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop" alt="" />
-                  <img className="inline-block h-6 w-6 rounded-full ring-2 ring-white" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop" alt="" />
-                </div>
-
-                <div className="flex items-center gap-3 text-[11px] text-slate-400 font-semibold">
-                  <span className="flex items-center gap-1">💬 4</span>
-                  <span className="flex items-center gap-1">📎 2</span>
-                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-[10px]">High</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Deadline 2 */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-2xs space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full border-2 border-slate-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="w-2 h-2 rounded-full bg-slate-700"></span>
-                  </span>
-                  <div>
-                    <h4 className="font-bold text-xs text-slate-900">API Rate Limiter Implement...</h4>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span> PRISM-088 • Cloud Infrastructure
-                    </p>
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded-lg bg-blue-50 border border-blue-100 text-[10px] font-bold text-blue-600 shrink-0">
-                  Tomorrow
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold text-[10px]">
-                  Backend Team
-                </span>
-
-                <div className="flex items-center gap-3 text-[11px] text-slate-400 font-semibold">
-                  <span className="flex items-center gap-1">🔀 3 PRs</span>
-                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-[10px]">Medium</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Deadline 3 */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-2xs space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full border-2 border-slate-400 shrink-0 mt-0.5"></span>
-                  <div>
-                    <h4 className="font-bold text-xs text-slate-900">Q3 Roadmap Slide Deck Review</h4>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> PRISM-219 • Strategy & GTM
-                    </p>
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-600 shrink-0">
-                  Oct 24
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-[10px]">
-                  Marketing
-                </span>
-
-                <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
-                  👁️ Reviewing
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Team Pulse / Live Activity */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-black text-sm text-slate-900 tracking-tight">Team Pulse</h3>
-            <span className="text-[11px] font-semibold text-slate-400">Live Activity</span>
-          </div>
-
-          <div className="space-y-3">
-            {/* Activity 1 */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-2xs flex items-start gap-3">
-              <div className="relative">
-                <img
-                  className="w-9 h-9 rounded-full object-cover ring-2 ring-white"
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop"
-                  alt="Alex"
-                />
-                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[8px]">
-                  💬
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-slate-800">
-                    Alex Rivera <span className="text-slate-400 font-normal">commented on</span> <span className="text-blue-600">Auth F...</span>
-                  </p>
-                  <span className="text-[10px] text-slate-400">8m ago</span>
-                </div>
-                <div className="mt-2 p-2.5 rounded-xl bg-blue-50/70 border border-blue-100/60 text-[11px] text-slate-700 leading-snug">
-                  "Updated Figma token sync to v2.4, ready for review"
-                </div>
-                <span className="inline-block mt-2 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold text-[9px]">
-                  Mobile App
-                </span>
-              </div>
-            </div>
-
-            {/* Activity 2 */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-2xs flex items-start gap-3">
-              <div className="relative">
-                <img
-                  className="w-9 h-9 rounded-full object-cover ring-2 ring-white"
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop"
-                  alt="Sarah"
-                />
-                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-slate-700 text-white flex items-center justify-center text-[8px]">
-                  ⇄
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-slate-800">
-                    Sarah Chen <span className="text-slate-400 font-normal">moved</span> <strong className="text-slate-800">Landing Pag...</strong>
-                  </p>
-                  <span className="text-[10px] text-slate-400">34m ago</span>
-                </div>
-                <div className="mt-2 flex items-center gap-1.5 text-[10px]">
-                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold">In Progress</span>
-                  <span className="text-slate-400">→</span>
-                  <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold">Review</span>
-                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold ml-auto">Growth Squad</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Activity 3 */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-2xs flex items-start gap-3">
-              <div className="relative">
-                <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">
-                  🤖
-                </div>
-                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px]">
-                  ✓
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-slate-800">
-                    <span className="text-blue-600 font-bold">PR #489</span> <span className="text-slate-400 font-normal">merged into</span> <code className="px-1 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px]">main</code>
-                  </p>
-                  <span className="text-[10px] text-slate-400">1h ago</span>
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold text-[10px] flex items-center gap-1">
-                    ✓ Build Passed
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold text-[9px]">
-                    CI/CD Pipeline
-                  </span>
-                </div>
-              </div>
-            </div>
+              ))
+            )}
           </div>
         </section>
       </main>

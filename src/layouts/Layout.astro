@@ -10,13 +10,7 @@ interface Props {
 
 const { title = 'Acme Corp - TaskFlow', description = 'Modern task and project management on Cloudflare D1', activePath = '' } = Astro.props;
 const rawUser = Astro.locals.user;
-const isPublicPage = activePath === '/' || activePath === '/login' || activePath === '/register';
-const user: any = rawUser || (isPublicPage ? null : {
-  id: 'demo-user',
-  name: 'Maya',
-  email: 'maya@acme.com',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop'
-});
+const user: any = rawUser;
 ---
 
 <!doctype html>

@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { getDb, tasks, projects, users } from '../../../db';
+import { getDb, tasks, projects, users, workspaceMembers } from '../../../db';
 import { getUserFromRequest } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 
 const createTaskSchema = z.object({
   projectId: z.string().min(1, 'Project ID is required'),
@@ -36,7 +36,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     const db = getDb(locals);
 
-    let query = db
+    // Only fetch tasks in projects that belong to workspaces where the user is a member
+    const userTasks = await db
       .select({
         id: tasks.id,
         projectId: tasks.projectId,
@@ -55,12 +56,21 @@ export const GET: APIRoute = async ({ request, locals }) => {
       })
       .from(tasks)
       .innerJoin(projects, eq(projects.id, tasks.projectId))
+      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
       .leftJoin(users, eq(users.id, tasks.assignedTo))
-      .orderBy(desc(tasks.updatedAt));
+      .where(eq(workspaceMembers.userId, auth.userId))
+      .orderBy(desc(tasks.updatedAt))
+      .all();
 
-    const taskList = await query.all();
+    // Deduplicate in case a user has multiple roles/entries in a workspace
+    const seen = new Set<string>();
+    const deduplicatedTasks = userTasks.filter((t) => {
+      if (seen.has(t.id)) return false;
+      seen.add(t.id);
+      return true;
+    });
 
-    let filtered = taskList;
+    let filtered = deduplicatedTasks;
     if (projectId) {
       filtered = filtered.filter((t) => t.projectId === projectId);
     }
@@ -85,6 +95,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const data = result.data;
     const db = getDb(locals);
+
+    // Verify user is a member of the project's workspace
+    const project = await db
+      .select({ workspaceId: projects.workspaceId })
+      .from(projects)
+      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
+      .where(and(eq(projects.id, data.projectId), eq(workspaceMembers.userId, auth.userId)))
+      .get();
+
+    if (!project) {
+      return errorResponse('Project not found or you do not have permission', 403);
+    }
+
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
@@ -131,8 +154,16 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     const { id, ...updates } = result.data;
     const db = getDb(locals);
 
-    const existing = await db.select().from(tasks).where(eq(tasks.id, id)).get();
-    if (!existing) return errorResponse('Task not found', 404);
+    // Verify task belongs to a project in user's workspace
+    const existing = await db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .innerJoin(projects, eq(projects.id, tasks.projectId))
+      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
+      .where(and(eq(tasks.id, id), eq(workspaceMembers.userId, auth.userId)))
+      .get();
+
+    if (!existing) return errorResponse('Task not found or access denied', 404);
 
     const now = new Date().toISOString();
     await db
@@ -159,6 +190,18 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
     if (!id) return errorResponse('Task ID is required', 400);
 
     const db = getDb(locals);
+
+    // Verify task belongs to a project in user's workspace
+    const existing = await db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .innerJoin(projects, eq(projects.id, tasks.projectId))
+      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
+      .where(and(eq(tasks.id, id), eq(workspaceMembers.userId, auth.userId)))
+      .get();
+
+    if (!existing) return errorResponse('Task not found or access denied', 404);
+
     await db.delete(tasks).where(eq(tasks.id, id));
     return successResponse({ message: 'Task deleted successfully' });
   } catch (err: any) {

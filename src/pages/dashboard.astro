@@ -2,12 +2,10 @@
 import Layout from '../layouts/Layout.astro';
 import MobileDashboard from '../components/dashboard/MobileDashboard';
 
-const user = Astro.locals.user || {
-  id: 'demo-user',
-  name: 'Maya',
-  email: 'maya@acme.com',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop'
-};
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect('/login');
+}
 ---
 
 <Layout title="Dashboard - Acme Corp" activePath="/dashboard">

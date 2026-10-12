@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { getDb, users, workspaceMembers } from '../../../db';
 import { getUserFromRequest } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
-import { eq } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 
 export const GET: APIRoute = async ({ request, locals }) => {
   try {
@@ -15,6 +15,15 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const db = getDb(locals);
 
     if (workspaceId) {
+      // Verify user has access to this workspace
+      const hasAccess = await db
+        .select()
+        .from(workspaceMembers)
+        .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, auth.userId)))
+        .get();
+
+      if (!hasAccess) return errorResponse('Forbidden: Not a member of this workspace', 403);
+
       const members = await db
         .select({
           id: users.id,
@@ -28,20 +37,64 @@ export const GET: APIRoute = async ({ request, locals }) => {
         .where(eq(workspaceMembers.workspaceId, workspaceId))
         .all();
 
-      return successResponse({ users: members });
+      // Deduplicate members
+      const seen = new Set<string>();
+      const deduplicatedMembers = members.filter((m) => {
+        if (seen.has(m.id)) return false;
+        seen.add(m.id);
+        return true;
+      });
+
+      return successResponse({ users: deduplicatedMembers });
     }
 
-    const allUsers = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        avatar: users.avatar,
-      })
-      .from(users)
+    // When no workspaceId is given, find all workspaces the user is part of
+    const userWorkspaceMemberships = await db
+      .select({ workspaceId: workspaceMembers.workspaceId })
+      .from(workspaceMembers)
+      .where(eq(workspaceMembers.userId, auth.userId))
       .all();
 
-    return successResponse({ users: allUsers });
+    const workspaceIds = userWorkspaceMemberships.map((w) => w.workspaceId);
+
+    let deduplicatedUsers: any[] = [];
+    if (workspaceIds.length > 0) {
+      const teamMembers = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          avatar: users.avatar,
+        })
+        .from(workspaceMembers)
+        .innerJoin(users, eq(users.id, workspaceMembers.userId))
+        .where(inArray(workspaceMembers.workspaceId, workspaceIds))
+        .all();
+
+      const seen = new Set<string>();
+      deduplicatedUsers = teamMembers.filter((u) => {
+        if (seen.has(u.id)) return false;
+        seen.add(u.id);
+        return true;
+      });
+    }
+
+    // If query returned empty or only self, ensure current user is present
+    if (deduplicatedUsers.length === 0) {
+      const self = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          avatar: users.avatar,
+        })
+        .from(users)
+        .where(eq(users.id, auth.userId))
+        .get();
+      if (self) deduplicatedUsers.push(self);
+    }
+
+    return successResponse({ users: deduplicatedUsers });
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to fetch users', 500);
   }

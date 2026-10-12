@@ -16,6 +16,7 @@
     "@astrojs/check": "^0.9.10",
     "@astrojs/cloudflare": "^14.3.4",
     "@astrojs/react": "^7.0.1",
+    "@hello-pangea/dnd": "^18.0.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/react": "^19.3.0",
