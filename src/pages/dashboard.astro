@@ -1,0 +1,20 @@
+---
+import Layout from '../layouts/Layout.astro';
+import MobileDashboard from '../components/dashboard/MobileDashboard';
+
+const user = Astro.locals.user || {
+  id: 'demo-user',
+  name: 'Maya',
+  email: 'maya@acme.com',
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop'
+};
+---
+
+<Layout title="Dashboard - Acme Corp" activePath="/dashboard">
+  {/* On Mobile: renders centered mobile app layout; On Desktop: renders full responsive dashboard */}
+  <div class="w-full">
+    <div class="max-w-xl md:max-w-6xl mx-auto px-4 md:px-8 py-5 md:py-8">
+      <MobileDashboard client:load user={user} />
+    </div>
+  </div>
+</Layout>
