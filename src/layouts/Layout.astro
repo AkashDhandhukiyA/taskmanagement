@@ -17,7 +17,7 @@ const user: any = rawUser;
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -31,14 +31,17 @@ const user: any = rawUser;
   <body class="bg-[#f8faff] text-slate-900 min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif] overflow-x-hidden">
     {user ? (
       <div class="flex min-h-screen min-w-0 max-w-full">
-        {/* DESKTOP SIDEBAR - Hidden on Mobile (md:flex) */}
-        <aside class="hidden md:flex w-64 bg-white border-r border-slate-200/80 flex-col fixed inset-y-0 z-30 shadow-xs">
-          {/* Logo + Workspace Switcher (combined header) */}
+        {/* ============ DESKTOP SIDEBAR (md and up) ============ */}
+        <aside class="hidden md:flex w-60 lg:w-64 xl:w-72 bg-white border-r border-slate-200/80 flex-col fixed inset-y-0 z-30 shadow-xs">
+          {/* Logo + Workspace Switcher */}
           <div class="relative border-b border-slate-100" id="wsSwitcherWrap">
             <button
               id="wsSwitcherBtn"
               type="button"
-              class="w-full h-16 flex items-center px-5 gap-3 hover:bg-slate-50/70 transition-colors cursor-pointer text-left"
+              class="w-full h-16 flex items-center px-4 lg:px-5 gap-3 hover:bg-slate-50/70 transition-colors cursor-pointer text-left"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-label="Switch workspace"
             >
               <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shadow-blue-500/30 shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -47,23 +50,31 @@ const user: any = rawUser;
               </div>
 
               <div class="flex items-center gap-1.5 flex-1 min-w-0">
-                <span id="wsSwitcherName" class="font-bold text-sm text-slate-900 truncate">Acme Corp</span>
-                <span class="px-1.5 py-0.2 rounded-md bg-blue-50 text-[10px] font-bold text-blue-600 border border-blue-200 shrink-0">
+                <span id="wsSwitcherName" class="font-bold text-sm text-slate-900 truncate">Loading...</span>
+                <span class="hidden lg:inline-block px-1.5 py-0.2 rounded-md bg-blue-50 text-[10px] font-bold text-blue-600 border border-blue-200 shrink-0">
                   Pro
                 </span>
               </div>
 
-              <svg id="wsSwitcherChevron" class="w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <svg
+                id="wsSwitcherChevron"
+                class="w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                viewBox="0 0 24 24"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
 
-            {/* Dropdown */}
+            {/* Desktop dropdown */}
             <div
               id="wsSwitcherMenu"
-              class="hidden absolute left-2 right-2 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 py-1.5 z-50 max-h-80 overflow-y-auto"
+              class="hidden absolute left-2 right-2 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 py-1.5 z-50 max-h-[70vh] overflow-y-auto"
+              role="listbox"
             >
-              <div class="px-3 py-2 border-b border-slate-100">
+              <div class="px-3 py-2 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Workspace</p>
               </div>
               <div id="wsSwitcherList" class="py-1"></div>
@@ -82,7 +93,7 @@ const user: any = rawUser;
           </div>
 
           {/* Navigation Links */}
-          <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
+          <nav class="flex-1 px-3 py-4 lg:py-5 space-y-1 overflow-y-auto">
             <div class="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Workspace</div>
 
             <a
@@ -93,8 +104,8 @@ const user: any = rawUser;
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z" /></svg>
-              Dashboard
+              <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z" /></svg>
+              <span class="truncate">Dashboard</span>
             </a>
 
             <a
@@ -105,8 +116,8 @@ const user: any = rawUser;
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-              Tasks & Kanban
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+              <span class="truncate">Tasks & Kanban</span>
             </a>
 
             <a
@@ -117,8 +128,8 @@ const user: any = rawUser;
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
-              Projects
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+              <span class="truncate">Projects</span>
             </a>
 
             <a
@@ -129,8 +140,8 @@ const user: any = rawUser;
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-              Team & Workspaces
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+              <span class="truncate">Team & Workspaces</span>
             </a>
 
             <div class="pt-5 px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Account</div>
@@ -143,18 +154,18 @@ const user: any = rawUser;
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-              Settings
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <span class="truncate">Settings</span>
             </a>
           </nav>
 
           {/* Desktop User Bottom */}
-          <div class="p-4 border-t border-slate-100 bg-slate-50/60">
+          <div class="p-3 lg:p-4 border-t border-slate-100 bg-slate-50/60">
             <div class="flex items-center gap-3">
               <img
                 src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || 'Maya')}`}
                 alt="Profile"
-                class="w-9 h-9 rounded-full object-cover ring-2 ring-white"
+                class="w-9 h-9 rounded-full object-cover ring-2 ring-white shrink-0"
               />
               <div class="flex-1 min-w-0">
                 <p class="text-xs font-bold text-slate-800 truncate">{user.name}</p>
@@ -163,7 +174,7 @@ const user: any = rawUser;
               <button
                 id="logoutBtn"
                 title="Logout"
-                class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer shrink-0"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
               </button>
@@ -171,56 +182,82 @@ const user: any = rawUser;
           </div>
         </aside>
 
-        {/* MAIN BODY AREA */}
-        <div class="flex-1 md:ml-64 flex flex-col min-h-screen min-w-0 max-w-full overflow-x-hidden">
+        {/* ============ MAIN BODY ============ */}
+        <div class="flex-1 md:ml-60 lg:ml-64 xl:ml-72 flex flex-col min-h-screen min-w-0 max-w-full overflow-x-hidden">
           {/* Top Navbar */}
-          <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-20 flex items-center justify-between px-4 sm:px-5 md:px-8">
-            {/* Mobile Header Title + Workspace Switcher */}
-            <div class="flex items-center gap-2.5 md:hidden relative" id="wsMobileWrap">
+          <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-20 flex items-center justify-between gap-2 px-3 sm:px-4 md:px-6 lg:px-8">
+            {/* Mobile / Tablet — Workspace switcher */}
+            <div class="flex items-center gap-2 relative min-w-0 flex-1 md:hidden" id="wsMobileWrap">
               <button
                 id="wsMobileBtn"
                 type="button"
-                class="flex items-center gap-2.5 cursor-pointer text-left"
+                class="flex items-center gap-2 cursor-pointer text-left min-w-0 max-w-full active:scale-[0.98] transition-transform"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-label="Switch workspace"
               >
                 <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shadow-blue-500/30 shrink-0">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <div class="flex items-center gap-1.5 min-w-0">
-                  <span id="wsMobileName" class="font-bold text-sm text-slate-900 truncate">Acme Corp</span>
-                  <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <div class="flex items-center gap-1 min-w-0">
+                  <span id="wsMobileName" class="font-bold text-sm text-slate-900 truncate max-w-[110px] sm:max-w-[160px]">
+                    Loading...
+                  </span>
+                  <svg
+                    id="wsMobileChevron"
+                    class="w-3 h-3 text-slate-400 shrink-0 transition-transform duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    viewBox="0 0 24 24"
+                  >
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
               </button>
 
-              {/* Mobile dropdown */}
+              {/* Mobile dropdown — positioned from right edge, safe on tiny screens */}
               <div
                 id="wsMobileMenu"
-                class="hidden absolute left-0 top-full mt-2 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 py-1.5 z-50 max-h-72 overflow-y-auto"
+                class="hidden absolute left-0 top-full mt-2 w-[min(calc(100vw-1.5rem),17rem)] bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 py-1.5 z-50 max-h-[70vh] overflow-y-auto"
+                role="listbox"
               >
-                <div class="px-3 py-2 border-b border-slate-100">
+                <div class="px-3 py-2 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl">
                   <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Workspace</p>
                 </div>
                 <div id="wsMobileList" class="py-1"></div>
+                <div class="border-t border-slate-100 mt-1 pt-1">
+                  <a
+                    href="/workspace"
+                    class="flex items-center gap-2 px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-xl mx-1 transition-colors"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Manage Workspaces
+                  </a>
+                </div>
               </div>
             </div>
 
-            {/* Dynamic Search & Notifications Island */}
-            <HeaderSearchNotifications client:load user={user} />
+            {/* Search + Notifications Island */}
+            <div class="flex items-center ml-auto min-w-0">
+              <HeaderSearchNotifications client:load user={user} />
+            </div>
           </header>
 
-          {/* Page Slot Content */}
-          <main class="flex-1 pb-28 md:pb-8 min-w-0 max-w-full overflow-x-hidden">
+          {/* Page content */}
+          <main class="flex-1 pb-28 md:pb-6 lg:pb-8 min-w-0 max-w-full overflow-x-hidden">
             <slot />
           </main>
 
-          {/* MOBILE BOTTOM NAVIGATION BAR */}
-          <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-lg border-t border-slate-200/90 flex items-center justify-around px-2 py-2 shadow-lg shadow-slate-900/5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+          {/* ============ MOBILE BOTTOM NAV (phones + small tablets) ============ */}
+          <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-lg border-t border-slate-200/90 flex items-center justify-around px-1 sm:px-2 py-2 shadow-lg shadow-slate-900/5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
             <a
               href="/dashboard"
-              class={`flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-2xl transition-all active:scale-95 ${
+              class={`flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1.5 rounded-2xl transition-all active:scale-95 min-w-[56px] ${
                 activePath === '/dashboard' ? 'text-blue-600 font-bold bg-blue-50/80 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
               }`}
             >
@@ -230,7 +267,7 @@ const user: any = rawUser;
 
             <a
               href="/tasks"
-              class={`flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-2xl transition-all active:scale-95 ${
+              class={`flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1.5 rounded-2xl transition-all active:scale-95 min-w-[56px] ${
                 activePath === '/tasks' ? 'text-blue-600 font-bold bg-blue-50/80 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
               }`}
             >
@@ -240,7 +277,7 @@ const user: any = rawUser;
 
             <a
               href="/projects"
-              class={`flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-2xl transition-all active:scale-95 ${
+              class={`flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1.5 rounded-2xl transition-all active:scale-95 min-w-[56px] ${
                 activePath === '/projects' ? 'text-blue-600 font-bold bg-blue-50/80 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
               }`}
             >
@@ -250,7 +287,7 @@ const user: any = rawUser;
 
             <a
               href="/workspace"
-              class={`flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-2xl transition-all active:scale-95 ${
+              class={`flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1.5 rounded-2xl transition-all active:scale-95 min-w-[56px] ${
                 activePath === '/workspace' ? 'text-blue-600 font-bold bg-blue-50/80 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
               }`}
             >
@@ -260,7 +297,7 @@ const user: any = rawUser;
 
             <a
               href="/settings"
-              class={`flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-2xl transition-all active:scale-95 ${
+              class={`flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1.5 rounded-2xl transition-all active:scale-95 min-w-[56px] ${
                 activePath === '/settings' ? 'text-blue-600 font-bold bg-blue-50/80 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
               }`}
             >
@@ -271,8 +308,9 @@ const user: any = rawUser;
         </div>
       </div>
     ) : (
+      /* ============ GUEST LAYOUT ============ */
       <div class="min-h-screen flex flex-col bg-[#f8faff]">
-        <header class="h-16 border-b border-slate-100 bg-white/90 backdrop-blur-md px-6 md:px-12 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
+        <header class="h-16 border-b border-slate-100 bg-white/90 backdrop-blur-md px-4 sm:px-6 md:px-12 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
           <a href="/" class="flex items-center gap-2.5">
             <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shadow-blue-500/30">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -280,9 +318,9 @@ const user: any = rawUser;
             <span class="font-extrabold text-base tracking-tight text-slate-900">TaskFlow</span>
           </a>
 
-          <div class="flex items-center gap-3">
-            <a href="/login" class="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-xl transition-colors">Sign In</a>
-            <a href="/register" class="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/30 transition-all">Get Started</a>
+          <div class="flex items-center gap-2 sm:gap-3">
+            <a href="/login" class="text-xs font-bold text-slate-600 hover:text-slate-900 px-2 sm:px-3 py-2 rounded-xl transition-colors">Sign In</a>
+            <a href="/register" class="px-3 sm:px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/30 transition-all">Get Started</a>
           </div>
         </header>
 
@@ -322,6 +360,7 @@ const user: any = rawUser;
         const mobileMenu = document.getElementById('wsMobileMenu');
         const mobileList = document.getElementById('wsMobileList');
         const mobileName = document.getElementById('wsMobileName');
+        const mobileChevron = document.getElementById('wsMobileChevron');
 
         if (!btn && !mobileBtn) return;
 
@@ -366,11 +405,10 @@ const user: any = rawUser;
                 '</div>' +
               '</div>' +
               (isActive
-                ? '<svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+                ? '<svg class="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
                 : '');
 
             el.addEventListener('click', () => selectWorkspace(ws.id));
-
             container.appendChild(el);
           });
         }
@@ -389,36 +427,56 @@ const user: any = rawUser;
           );
         }
 
-        function openMenu(m) {
+        function openMenu(m, c) {
           closeMenus();
           m?.classList.remove('hidden');
-          if (chevron) chevron.style.transform = 'rotate(180deg)';
+          if (c) c.style.transform = 'rotate(180deg)';
+          // aria
+          if (m === menu && btn) btn.setAttribute('aria-expanded', 'true');
+          if (m === mobileMenu && mobileBtn) mobileBtn.setAttribute('aria-expanded', 'true');
         }
 
         function closeMenus() {
           menu?.classList.add('hidden');
           mobileMenu?.classList.add('hidden');
           if (chevron) chevron.style.transform = 'rotate(0deg)';
+          if (mobileChevron) mobileChevron.style.transform = 'rotate(0deg)';
+          if (btn) btn.setAttribute('aria-expanded', 'false');
+          if (mobileBtn) mobileBtn.setAttribute('aria-expanded', 'false');
         }
 
         btn?.addEventListener('click', (e) => {
           e.stopPropagation();
-          if (menu?.classList.contains('hidden')) openMenu(menu);
+          if (menu?.classList.contains('hidden')) openMenu(menu, chevron);
           else closeMenus();
         });
 
         mobileBtn?.addEventListener('click', (e) => {
           e.stopPropagation();
-          if (mobileMenu?.classList.contains('hidden')) openMenu(mobileMenu);
+          if (mobileMenu?.classList.contains('hidden')) openMenu(mobileMenu, mobileChevron);
           else closeMenus();
         });
 
+        // Close on outside tap / click
         document.addEventListener('click', (e) => {
           const t = e.target;
           if ((wrap && wrap.contains(t)) || (mobileWrap && mobileWrap.contains(t))) return;
           closeMenus();
         });
 
+        // Close on Escape
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') closeMenus();
+        });
+
+        // Close on orientation / resize (avoids ghost dropdowns on breakpoints)
+        let rt;
+        window.addEventListener('resize', () => {
+          clearTimeout(rt);
+          rt = setTimeout(closeMenus, 120);
+        });
+
+        // Initial load
         (async function loadWorkspaces() {
           try {
             const res = await fetch('/api/workspaces');
