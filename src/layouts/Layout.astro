@@ -48,6 +48,41 @@ const user: any = rawUser;
             </div>
           </div>
 
+          {/* Workspace Switcher (Desktop) */}
+          <div class="px-3 pt-4 pb-2 border-b border-slate-100 relative" id="wsSwitcherWrap">
+            <button
+              id="wsSwitcherBtn"
+              type="button"
+              class="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100/70 transition-all cursor-pointer"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-black shrink-0">
+                  <span id="wsSwitcherInitial">W</span>
+                </div>
+                <div class="min-w-0 text-left">
+                  <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">Workspace</p>
+                  <p id="wsSwitcherName" class="text-xs font-bold text-slate-800 truncate leading-tight mt-0.5">
+                    Loading...
+                  </p>
+                </div>
+              </div>
+              <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Dropdown */}
+            <div
+              id="wsSwitcherMenu"
+              class="hidden absolute left-3 right-3 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 py-1.5 z-50 max-h-72 overflow-y-auto"
+            >
+              <div class="px-3 py-2 border-b border-slate-100">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Workspace</p>
+              </div>
+              <div id="wsSwitcherList" class="py-1"></div>
+            </div>
+          </div>
+
           {/* Navigation Links */}
           <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
             <div class="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Workspace</div>
@@ -142,16 +177,37 @@ const user: any = rawUser;
         <div class="flex-1 md:ml-64 flex flex-col min-h-screen min-w-0 max-w-full overflow-x-hidden">
           {/* Top Navbar */}
           <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-20 flex items-center justify-between px-4 sm:px-5 md:px-8">
-            {/* Mobile Header Title */}
-            <div class="flex items-center gap-2.5 md:hidden">
+            {/* Mobile Header Title + Workspace Switcher */}
+            <div class="flex items-center gap-2.5 md:hidden relative" id="wsMobileWrap">
               <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shadow-blue-500/30">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <div class="flex items-center gap-1.5">
-                <span class="font-bold text-sm text-slate-900">Acme Corp</span>
-                <span class="px-1.5 py-0.2 rounded-md bg-blue-50 text-[10px] font-bold text-blue-600 border border-blue-200">Pro</span>
+
+              <button
+                id="wsMobileBtn"
+                type="button"
+                class="flex items-center gap-1.5 cursor-pointer"
+              >
+                <div class="text-left min-w-0">
+                  <p class="font-bold text-sm text-slate-900 leading-none truncate" id="wsMobileName">Acme Corp</p>
+                  <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-none mt-0.5">Workspace</p>
+                </div>
+                <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Mobile dropdown */}
+              <div
+                id="wsMobileMenu"
+                class="hidden absolute left-0 top-full mt-2 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 py-1.5 z-50 max-h-72 overflow-y-auto"
+              >
+                <div class="px-3 py-2 border-b border-slate-100">
+                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Workspace</p>
+                </div>
+                <div id="wsMobileList" class="py-1"></div>
               </div>
             </div>
 
@@ -164,7 +220,7 @@ const user: any = rawUser;
             <slot />
           </main>
 
-          {/* MOBILE BOTTOM NAVIGATION BAR - Shown on Mobile (md:hidden) */}
+          {/* MOBILE BOTTOM NAVIGATION BAR */}
           <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-lg border-t border-slate-200/90 flex items-center justify-around px-2 py-2 shadow-lg shadow-slate-900/5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
             <a
               href="/dashboard"
@@ -241,6 +297,7 @@ const user: any = rawUser;
     )}
 
     <script>
+      // ---------- Logout ----------
       const logoutBtn = document.getElementById('logoutBtn');
       if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
@@ -252,6 +309,163 @@ const user: any = rawUser;
           }
         });
       }
+
+      // ---------- Workspace Switcher ----------
+      (function () {
+        const STORAGE_KEY = 'activeWorkspaceId';
+
+        const desktopWrap = document.getElementById('wsSwitcherWrap');
+        const desktopBtn = document.getElementById('wsSwitcherBtn');
+        const desktopMenu = document.getElementById('wsSwitcherMenu');
+        const desktopList = document.getElementById('wsSwitcherList');
+        const desktopName = document.getElementById('wsSwitcherName');
+        const desktopInitial = document.getElementById('wsSwitcherInitial');
+
+        const mobileWrap = document.getElementById('wsMobileWrap');
+        const mobileBtn = document.getElementById('wsMobileBtn');
+        const mobileMenu = document.getElementById('wsMobileMenu');
+        const mobileList = document.getElementById('wsMobileList');
+        const mobileName = document.getElementById('wsMobileName');
+
+        if (!desktopBtn && !mobileBtn) return;
+
+        let workspaces: any[] = [];
+        let activeId: string = localStorage.getItem(STORAGE_KEY) || '';
+
+        function setActiveDisplay(ws: any) {
+          const name = ws?.name || 'Workspace';
+          const initial = name.charAt(0).toUpperCase();
+          if (desktopName) desktopName.textContent = name;
+          if (desktopInitial) desktopInitial.textContent = initial;
+          if (mobileName) mobileName.textContent = name;
+        }
+
+        function renderList(container: HTMLElement | null) {
+          if (!container) return;
+          container.innerHTML = '';
+
+          if (!workspaces.length) {
+            const empty = document.createElement('div');
+            empty.className = 'px-3 py-2 text-xs text-slate-400';
+            empty.textContent = 'No workspaces found';
+            container.appendChild(empty);
+            return;
+          }
+
+          workspaces.forEach((ws) => {
+            const isActive = ws.id === activeId;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className =
+              'w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs rounded-xl transition-colors cursor-pointer ' +
+              (isActive
+                ? 'bg-blue-50 text-blue-700 font-bold'
+                : 'text-slate-700 hover:bg-slate-50 font-medium');
+            btn.innerHTML =
+              '<div class="flex items-center gap-2 min-w-0">' +
+                '<div class="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-black shrink-0">' +
+                  ws.name.charAt(0).toUpperCase() +
+                '</div>' +
+                '<div class="min-w-0">' +
+                  '<p class="truncate">' + ws.name + '</p>' +
+                  '<p class="text-[9px] text-slate-400 capitalize leading-none mt-0.5">' + (ws.role || 'member') + '</p>' +
+                '</div>' +
+              '</div>' +
+              (isActive
+                ? '<svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+                : '');
+
+            btn.addEventListener('click', () => {
+              selectWorkspace(ws.id);
+            });
+
+            container.appendChild(btn);
+          });
+        }
+
+        function selectWorkspace(id: string) {
+          activeId = id;
+          localStorage.setItem(STORAGE_KEY, id);
+          const ws = workspaces.find((w) => w.id === id);
+          setActiveDisplay(ws);
+          renderList(desktopList);
+          renderList(mobileList);
+          closeMenus();
+
+          // Notify the rest of the app
+          window.dispatchEvent(
+            new CustomEvent('workspaceChanged', { detail: { workspaceId: id, workspace: ws } })
+          );
+        }
+
+        function openMenu(menu: HTMLElement | null) {
+          closeMenus();
+          menu?.classList.remove('hidden');
+        }
+
+        function closeMenus() {
+          desktopMenu?.classList.add('hidden');
+          mobileMenu?.classList.add('hidden');
+        }
+
+        desktopBtn?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (desktopMenu?.classList.contains('hidden')) {
+            openMenu(desktopMenu);
+          } else {
+            closeMenus();
+          }
+        });
+
+        mobileBtn?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (mobileMenu?.classList.contains('hidden')) {
+            openMenu(mobileMenu);
+          } else {
+            closeMenus();
+          }
+        });
+
+        document.addEventListener('click', (e) => {
+          const target = e.target as Node;
+          if (
+            (desktopWrap && desktopWrap.contains(target)) ||
+            (mobileWrap && mobileWrap.contains(target))
+          ) {
+            return;
+          }
+          closeMenus();
+        });
+
+        // Load workspaces from the API
+        (async function loadWorkspaces() {
+          try {
+            const res = await fetch('/api/workspaces');
+            const data: any = await res.json();
+            workspaces = data.workspaces || [];
+
+            if (!workspaces.length) {
+              setActiveDisplay(null);
+              renderList(desktopList);
+              renderList(mobileList);
+              return;
+            }
+
+            // If stored ID isn't in the list, fall back to the first one
+            if (!activeId || !workspaces.some((w) => w.id === activeId)) {
+              activeId = workspaces[0].id;
+              localStorage.setItem(STORAGE_KEY, activeId);
+            }
+
+            const activeWs = workspaces.find((w) => w.id === activeId);
+            setActiveDisplay(activeWs);
+            renderList(desktopList);
+            renderList(mobileList);
+          } catch (err) {
+            console.error('Failed to load workspaces for switcher', err);
+          }
+        })();
+      })();
     </script>
   </body>
 </html>
