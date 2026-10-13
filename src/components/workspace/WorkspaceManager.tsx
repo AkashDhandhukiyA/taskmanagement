@@ -118,9 +118,15 @@ export default function WorkspaceManager() {
 
     try {
       setDeletingId(workspaceId);
-      const res = await fetch(`/api/workspaces/${workspaceId}`, {
+
+      // ✅ Correct endpoint — send ID in the body, not in the URL
+      const res = await fetch('/api/workspaces', {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: workspaceId }),
       });
+
+      const data: any = await res.json().catch(() => ({}));
 
       if (res.ok) {
         // If the deleted workspace was active, clear the active ID
@@ -131,7 +137,6 @@ export default function WorkspaceManager() {
         // Reload the workspaces list
         await loadData();
       } else {
-        const data: any = await res.json().catch(() => ({}));
         alert(data.error || `Failed to delete workspace (HTTP ${res.status})`);
       }
     } catch (e: any) {
@@ -355,4 +360,4 @@ export default function WorkspaceManager() {
       )}
     </div>
   );
-}
+      }
