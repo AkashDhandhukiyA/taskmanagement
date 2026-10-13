@@ -77,6 +77,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       role: 'owner',
     });
 
+    // Create default project in this workspace
     const projectId = crypto.randomUUID();
     await db.insert(projects).values({
       id: projectId,
@@ -109,6 +110,7 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     if (!result.success) return errorResponse(result.error.errors[0].message, 400);
 
     const db = getDb(locals);
+    // Verify membership
     const membership = await db
       .select()
       .from(workspaceMembers)
@@ -136,7 +138,8 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
 };
 
 /**
- * Shared delete logic used by both DELETE export and the path-based handler.
+ * Shared delete logic used by the DELETE export below.
+ * Accepts the workspace ID from either a JSON body or the query string.
  */
 export async function deleteWorkspaceById(
   id: string,
@@ -148,6 +151,7 @@ export async function deleteWorkspaceById(
   const workspace = await db.select().from(workspaces).where(eq(workspaces.id, id)).get();
   if (!workspace) return errorResponse('Workspace not found', 404);
 
+  // Verify membership + role
   const membership = await db
     .select()
     .from(workspaceMembers)
@@ -158,6 +162,7 @@ export async function deleteWorkspaceById(
     return errorResponse('Forbidden: insufficient permissions', 403);
   }
 
+  // Extra safety: only the actual owner can delete the workspace
   if (workspace.ownerId !== authUserId) {
     return errorResponse('Only the owner can delete the workspace', 403);
   }
@@ -182,14 +187,16 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
 
     let id: string | null = null;
 
+    // 1. Try JSON body
     try {
       const body = await request.clone().json();
       const parsed = deleteWorkspaceSchema.safeParse(body);
       if (parsed.success) id = parsed.data.id;
     } catch {
-      // ignore empty / non-JSON body
+      // body empty / not JSON — ignore
     }
 
+    // 2. Fallback to query string
     if (!id) {
       const url = new URL(request.url);
       id = url.searchParams.get('id');
