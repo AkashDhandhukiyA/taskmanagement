@@ -77,7 +77,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
       role: 'owner',
     });
 
-    // Create default project in this workspace
     const projectId = crypto.randomUUID();
     await db.insert(projects).values({
       id: projectId,
@@ -110,7 +109,6 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     if (!result.success) return errorResponse(result.error.errors[0].message, 400);
 
     const db = getDb(locals);
-    // Verify membership
     const membership = await db
       .select()
       .from(workspaceMembers)
@@ -138,8 +136,7 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
 };
 
 /**
- * Shared delete logic used by both DELETE export and any future
- * path-based delete handlers.
+ * Shared delete logic used by both DELETE export and the path-based handler.
  */
 export async function deleteWorkspaceById(
   id: string,
@@ -151,7 +148,6 @@ export async function deleteWorkspaceById(
   const workspace = await db.select().from(workspaces).where(eq(workspaces.id, id)).get();
   if (!workspace) return errorResponse('Workspace not found', 404);
 
-  // Verify membership + role
   const membership = await db
     .select()
     .from(workspaceMembers)
@@ -162,51 +158,38 @@ export async function deleteWorkspaceById(
     return errorResponse('Forbidden: insufficient permissions', 403);
   }
 
-  // Extra safety: only the actual owner can delete the workspace
   if (workspace.ownerId !== authUserId) {
     return errorResponse('Only the owner can delete the workspace', 403);
   }
 
-  // Clean up related rows (workspaceMembers + projects)
-  // If your Drizzle schema already has onDelete: 'cascade', these are optional.
+  // Clean up related rows
   await db.delete(workspaceMembers).where(eq(workspaceMembers.workspaceId, id));
   await db.delete(projects).where(eq(projects.workspaceId, id));
-
   await db.delete(workspaces).where(eq(workspaces.id, id));
 
   return successResponse({ message: 'Workspace deleted successfully' });
 }
 
 /**
- * DELETE handler that accepts the workspace ID from either:
- *   1. The URL path:   DELETE /api/workspaces/<id>     (params.id)
- *   2. A JSON body:    { "id": "<id>" }
- *   3. Query string:   DELETE /api/workspaces?id=<id>
+ * DELETE handler that accepts the workspace ID from:
+ *   1. JSON body:    { "id": "<id>" }
+ *   2. Query string: /api/workspaces?id=<id>
  */
-export const DELETE: APIRoute = async ({ request, locals, params }) => {
+export const DELETE: APIRoute = async ({ request, locals }) => {
   try {
     const auth = await getUserFromRequest(request);
     if (!auth) return errorResponse('Unauthorized', 401);
 
     let id: string | null = null;
 
-    // 1. Path param (if this file is mounted as [...id] or used via a re-export)
-    if (params && typeof (params as any).id === 'string') {
-      id = (params as any).id;
+    try {
+      const body = await request.clone().json();
+      const parsed = deleteWorkspaceSchema.safeParse(body);
+      if (parsed.success) id = parsed.data.id;
+    } catch {
+      // ignore empty / non-JSON body
     }
 
-    // 2. JSON body
-    if (!id) {
-      try {
-        const body = await request.clone().json();
-        const parsed = deleteWorkspaceSchema.safeParse(body);
-        if (parsed.success) id = parsed.data.id;
-      } catch {
-        // body was empty or not JSON — ignore and fall through
-      }
-    }
-
-    // 3. Query string
     if (!id) {
       const url = new URL(request.url);
       id = url.searchParams.get('id');
