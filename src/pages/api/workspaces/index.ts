@@ -14,6 +14,10 @@ const updateWorkspaceSchema = z.object({
   name: z.string().min(2, 'Workspace name must be at least 2 characters'),
 });
 
+const deleteWorkspaceSchema = z.object({
+  id: z.string().min(1, 'Workspace ID is required'),
+});
+
 export const GET: APIRoute = async ({ request, locals }) => {
   try {
     const auth = await getUserFromRequest(request);
@@ -84,10 +88,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       createdAt: now,
     });
 
-    return successResponse({
-      workspace: { id: workspaceId, name: result.data.name, role: 'owner' },
-      message: 'Workspace created successfully',
-    }, 201);
+    return successResponse(
+      {
+        workspace: { id: workspaceId, name: result.data.name, role: 'owner' },
+        message: 'Workspace created successfully',
+      },
+      201
+    );
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to create workspace', 500);
   }
@@ -107,39 +114,107 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     const membership = await db
       .select()
       .from(workspaceMembers)
-      .where(and(eq(workspaceMembers.workspaceId, result.data.id), eq(workspaceMembers.userId, auth.userId)))
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, result.data.id),
+          eq(workspaceMembers.userId, auth.userId)
+        )
+      )
       .get();
 
     if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
       return errorResponse('Forbidden: insufficient permissions', 403);
     }
 
-    await db.update(workspaces).set({ name: result.data.name }).where(eq(workspaces.id, result.data.id));
+    await db
+      .update(workspaces)
+      .set({ name: result.data.name })
+      .where(eq(workspaces.id, result.data.id));
+
     return successResponse({ message: 'Workspace updated successfully' });
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to update workspace', 500);
   }
 };
 
-export const DELETE: APIRoute = async ({ request, locals }) => {
+/**
+ * Shared delete logic used by both DELETE export and any future
+ * path-based delete handlers.
+ */
+export async function deleteWorkspaceById(
+  id: string,
+  authUserId: string,
+  locals: App.Locals
+): Promise<Response> {
+  const db = getDb(locals);
+
+  const workspace = await db.select().from(workspaces).where(eq(workspaces.id, id)).get();
+  if (!workspace) return errorResponse('Workspace not found', 404);
+
+  // Verify membership + role
+  const membership = await db
+    .select()
+    .from(workspaceMembers)
+    .where(and(eq(workspaceMembers.workspaceId, id), eq(workspaceMembers.userId, authUserId)))
+    .get();
+
+  if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+    return errorResponse('Forbidden: insufficient permissions', 403);
+  }
+
+  // Extra safety: only the actual owner can delete the workspace
+  if (workspace.ownerId !== authUserId) {
+    return errorResponse('Only the owner can delete the workspace', 403);
+  }
+
+  // Clean up related rows (workspaceMembers + projects)
+  // If your Drizzle schema already has onDelete: 'cascade', these are optional.
+  await db.delete(workspaceMembers).where(eq(workspaceMembers.workspaceId, id));
+  await db.delete(projects).where(eq(projects.workspaceId, id));
+
+  await db.delete(workspaces).where(eq(workspaces.id, id));
+
+  return successResponse({ message: 'Workspace deleted successfully' });
+}
+
+/**
+ * DELETE handler that accepts the workspace ID from either:
+ *   1. The URL path:   DELETE /api/workspaces/<id>     (params.id)
+ *   2. A JSON body:    { "id": "<id>" }
+ *   3. Query string:   DELETE /api/workspaces?id=<id>
+ */
+export const DELETE: APIRoute = async ({ request, locals, params }) => {
   try {
     const auth = await getUserFromRequest(request);
     if (!auth) return errorResponse('Unauthorized', 401);
 
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
-    if (!id) return errorResponse('Workspace ID is required', 400);
+    let id: string | null = null;
 
-    const db = getDb(locals);
-    const workspace = await db.select().from(workspaces).where(eq(workspaces.id, id)).get();
-    if (!workspace) return errorResponse('Workspace not found', 404);
-
-    if (workspace.ownerId !== auth.userId) {
-      return errorResponse('Only the owner can delete the workspace', 403);
+    // 1. Path param (if this file is mounted as [...id] or used via a re-export)
+    if (params && typeof (params as any).id === 'string') {
+      id = (params as any).id;
     }
 
-    await db.delete(workspaces).where(eq(workspaces.id, id));
-    return successResponse({ message: 'Workspace deleted successfully' });
+    // 2. JSON body
+    if (!id) {
+      try {
+        const body = await request.clone().json();
+        const parsed = deleteWorkspaceSchema.safeParse(body);
+        if (parsed.success) id = parsed.data.id;
+      } catch {
+        // body was empty or not JSON — ignore and fall through
+      }
+    }
+
+    // 3. Query string
+    if (!id) {
+      const url = new URL(request.url);
+      id = url.searchParams.get('id');
+    }
+
+    if (!id) return errorResponse('Workspace ID is required', 400);
+
+    return await deleteWorkspaceById(id, auth.userId, locals);
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to delete workspace', 500);
   }
