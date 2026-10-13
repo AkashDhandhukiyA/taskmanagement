@@ -15,6 +15,9 @@ export default function WorkspaceManager() {
   const [inviteSuccess, setInviteSuccess] = useState('');
   const [inviting, setInviting] = useState(false);
 
+  // Delete Workspace state
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const handleInviteMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteIdentifier.trim() || !activeWorkspaceId) return;
@@ -107,6 +110,37 @@ export default function WorkspaceManager() {
     }
   };
 
+  const handleDeleteWorkspace = async (workspaceId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent selecting the workspace when clicking delete
+    if (!window.confirm('Are you sure you want to delete this workspace? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setDeletingId(workspaceId);
+      const res = await fetch(`/api/workspaces/${workspaceId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        // If the deleted workspace was active, clear the active ID
+        if (activeWorkspaceId === workspaceId) {
+          setActiveWorkspaceId('');
+          setMembers([]);
+        }
+        // Reload the workspaces list
+        await loadData();
+      } else {
+        const data: any = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to delete workspace');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Network error');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (loading) {
     return <div className="py-12 text-center text-xs text-slate-400 font-semibold">Loading workspaces...</div>;
   }
@@ -119,24 +153,46 @@ export default function WorkspaceManager() {
           <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider">Your Workspaces</h3>
           <div className="space-y-2">
             {workspaces.map((w) => (
-              <button
+              <div
                 key={w.id}
-                onClick={() => {
-                  setActiveWorkspaceId(w.id);
-                  loadMembers(w.id);
-                }}
                 className={`w-full p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
                   activeWorkspaceId === w.id
                     ? 'bg-blue-50 border-blue-200 text-blue-900 font-bold shadow-2xs'
                     : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
                 }`}
               >
-                <div>
-                  <p className="text-xs">{w.name}</p>
-                  <p className="text-[10px] text-slate-400 capitalize font-medium">Role: {w.role}</p>
-                </div>
-                {activeWorkspaceId === w.id && <span className="text-xs text-blue-600 font-black">●</span>}
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveWorkspaceId(w.id);
+                    loadMembers(w.id);
+                  }}
+                  className="flex-1 text-left flex items-center justify-between"
+                >
+                  <div>
+                    <p className="text-xs">{w.name}</p>
+                    <p className="text-[10px] text-slate-400 capitalize font-medium">Role: {w.role}</p>
+                  </div>
+                  {activeWorkspaceId === w.id && <span className="text-xs text-blue-600 font-black">●</span>}
+                </button>
+
+                <button
+                  onClick={(e) => handleDeleteWorkspace(w.id, e)}
+                  disabled={deletingId === w.id}
+                  className="ml-2 p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                  title="Delete workspace"
+                >
+                  {deletingId === w.id ? (
+                    <span className="text-[10px] font-bold">...</span>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             ))}
           </div>
 
