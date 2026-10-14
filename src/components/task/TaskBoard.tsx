@@ -43,7 +43,6 @@ const COLUMNS: { id: Task['status']; label: string; dotColor: string; badgeBg: s
   { id: 'done', label: 'Done', dotColor: 'bg-emerald-600', badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 ];
 
-// Priority meta with dot colors + label styling used everywhere
 const PRIORITY_META: Record<
   Task['priority'],
   { label: string; dot: string; text: string; activeBg: string; activeBorder: string }
@@ -66,17 +65,14 @@ export default function TaskBoard() {
   const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'table'>('kanban');
   const [activeMobileLane, setActiveMobileLane] = useState<Task['status']>('todo');
 
-  // Quick filter chip state
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
 
-  // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
 
-  // Form state
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formPriority, setFormPriority] = useState<Task['priority']>('medium');
@@ -85,7 +81,6 @@ export default function TaskBoard() {
   const [formProjectId, setFormProjectId] = useState('');
   const [formAssignedTo, setFormAssignedTo] = useState('');
 
-  // Current user id (from localStorage)
   const currentUserId =
     typeof window !== 'undefined'
       ? localStorage.getItem('userId') || localStorage.getItem('activeUserId') || ''
@@ -155,16 +150,16 @@ export default function TaskBoard() {
     }
   };
 
-  const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
+  // Generic partial update for a task
+  const handleTaskPatch = async (taskId: string, patch: Partial<Task>) => {
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+      prev.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
     );
-
     try {
       await fetch('/api/tasks', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: taskId, status: newStatus }),
+        body: JSON.stringify({ id: taskId, ...patch }),
       });
     } catch (err) {
       console.error(err);
@@ -172,21 +167,22 @@ export default function TaskBoard() {
     }
   };
 
-  const handlePriorityChange = async (taskId: string, newPriority: Task['priority']) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, priority: newPriority } : t))
-    );
+  const handleStatusChange = (taskId: string, newStatus: Task['status']) =>
+    handleTaskPatch(taskId, { status: newStatus });
 
-    try {
-      await fetch('/api/tasks', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: taskId, priority: newPriority }),
-      });
-    } catch (err) {
-      console.error(err);
-      fetchData();
-    }
+  const handlePriorityChange = (taskId: string, newPriority: Task['priority']) =>
+    handleTaskPatch(taskId, { priority: newPriority });
+
+  const handleDueDateChange = (taskId: string, newDate: string | null) =>
+    handleTaskPatch(taskId, { dueDate: newDate });
+
+  const handleProjectChange = (taskId: string, newProjectId: string) => {
+    const proj = projects.find((p) => p.id === newProjectId);
+    handleTaskPatch(taskId, {
+      projectId: newProjectId,
+      projectName: proj?.name,
+      projectColor: proj?.color,
+    });
   };
 
   const onDragEnd = async (result: DropResult) => {
@@ -201,9 +197,7 @@ export default function TaskBoard() {
     }
 
     const newStatus = destination.droppableId as Task['status'];
-    const taskId = draggableId;
-
-    handleStatusChange(taskId, newStatus);
+    handleStatusChange(draggableId, newStatus);
   };
 
   const handleDeleteTask = async (taskId: string) => {
@@ -257,7 +251,6 @@ export default function TaskBoard() {
     }
   };
 
-  // ---------- Quick filter helpers ----------
   const todayISO = new Date().toISOString().slice(0, 10);
 
   const matchesQuickFilter = (task: Task): boolean => {
@@ -333,7 +326,8 @@ export default function TaskBoard() {
     return 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
   };
 
-  // ---------- Priority selector (styled) ----------
+  // ---------- Reusable styled inline selectors ----------
+
   const PrioritySelect = ({
     value,
     onChange,
@@ -375,11 +369,166 @@ export default function TaskBoard() {
     );
   };
 
+  const ProjectSelect = ({
+    value,
+    onChange,
+    size = 'sm',
+  }: {
+    value: string;
+    onChange: (id: string) => void;
+    size?: 'sm' | 'md';
+  }) => {
+    const proj = projects.find((p) => p.id === value);
+    const color = proj?.color || '#2563eb';
+    const label = proj?.name || 'General';
+    const sizeCls =
+      size === 'sm'
+        ? 'text-[10px] px-2 py-0.5 rounded-lg'
+        : 'text-xs px-2.5 py-1.5 rounded-xl';
+    return (
+      <div className="relative inline-flex max-w-full">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          className={`appearance-none cursor-pointer font-bold pr-6 text-white border ${sizeCls}`}
+          style={{ backgroundColor: color, borderColor: color }}
+        >
+          {projects.map((p) => (
+            <option key={p.id} value={p.id} style={{ color: '#0f172a', background: '#ffffff' }}>
+              📁 {p.name}
+            </option>
+          ))}
+        </select>
+        <span
+          className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/80"
+          aria-hidden
+        ></span>
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center pl-3 pr-6 truncate text-white font-bold pointer-events-none">
+          {label}
+        </span>
+        <svg
+          className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-white"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    );
+  };
+
+  const StatusSelect = ({
+    value,
+    onChange,
+    size = 'sm',
+  }: {
+    value: Task['status'];
+    onChange: (s: Task['status']) => void;
+    size?: 'sm' | 'md';
+  }) => {
+    const col = COLUMNS.find((c) => c.id === value)!;
+    const sizeCls =
+      size === 'sm'
+        ? 'text-[10px] px-2 py-0.5 rounded-lg'
+        : 'text-xs px-2.5 py-1.5 rounded-xl';
+    return (
+      <div className="relative inline-flex">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value as Task['status'])}
+          onClick={(e) => e.stopPropagation()}
+          className={`appearance-none cursor-pointer border font-bold pr-6 ${sizeCls} ${col.badgeBg}`}
+        >
+          {COLUMNS.map((c) => (
+            <option key={c.id} value={c.id}>
+              → {c.label}
+            </option>
+          ))}
+        </select>
+        <svg
+          className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-slate-500"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    );
+  };
+
+  // Date + quick actions
+  const formatDateLabel = (iso?: string | null) => {
+    if (!iso) return 'No date';
+    const d = new Date(iso + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Tomorrow';
+    if (diff === -1) return 'Yesterday';
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
+  const DueDateSelect = ({
+    value,
+    onChange,
+    size = 'sm',
+  }: {
+    value?: string | null;
+    onChange: (date: string | null) => void;
+    size?: 'sm' | 'md';
+  }) => {
+    const sizeCls =
+      size === 'sm'
+        ? 'text-[10px] px-2 py-0.5 rounded-lg'
+        : 'text-xs px-2.5 py-1.5 rounded-xl';
+    const isOverdue = !!value && value < todayISO;
+    const isToday = value === todayISO;
+    const tone = isOverdue
+      ? 'bg-rose-50 text-rose-600 border-rose-300'
+      : isToday
+      ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
+      : 'bg-slate-50 text-slate-600 border-slate-200';
+
+    return (
+      <div className="relative inline-flex items-center gap-1">
+        <span className={`inline-flex items-center gap-1 border font-bold ${sizeCls} ${tone}`}>
+          <span>📅</span>
+          <span>{formatDateLabel(value)}</span>
+        </span>
+        <input
+          type="date"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value || null)}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          aria-label="Change due date"
+        />
+        {value && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange(null);
+            }}
+            className="text-slate-400 hover:text-rose-500 text-[10px] font-bold px-1"
+            title="Clear date"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Controls Toolbar */}
       <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-        {/* Row 1 */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center bg-slate-100 p-1 rounded-xl">
@@ -458,7 +607,7 @@ export default function TaskBoard() {
           </div>
         </div>
 
-        {/* Row 2: Quick Filters */}
+        {/* Quick Filters */}
         <div className="pt-2 border-t border-slate-100 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Quick Filters</span>
@@ -487,7 +636,7 @@ export default function TaskBoard() {
           </div>
         </div>
 
-        {/* Row 3: Project Chips */}
+        {/* Project Chips */}
         {projects.length > 0 && (
           <div className="pt-2 border-t border-slate-100 space-y-2">
             <div className="flex items-center gap-2">
@@ -634,12 +783,10 @@ export default function TaskBoard() {
                                         }`}
                                       >
                                         <div className="flex items-start justify-between gap-2 mb-2">
-                                          <span
-                                            className="text-[9px] font-bold px-2 py-0.5 rounded-md text-white"
-                                            style={{ backgroundColor: task.projectColor || '#2563eb' }}
-                                          >
-                                            {task.projectName || 'General'}
-                                          </span>
+                                          <ProjectSelect
+                                            value={task.projectId}
+                                            onChange={(pid) => handleProjectChange(task.id, pid)}
+                                          />
                                           <div className="flex items-center gap-1.5">
                                             <PrioritySelect
                                               value={task.priority}
@@ -662,13 +809,10 @@ export default function TaskBoard() {
                                         )}
 
                                         <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
-                                          <div>
-                                            {task.dueDate ? (
-                                              <span className="text-slate-500">📅 {task.dueDate}</span>
-                                            ) : (
-                                              <span>No date</span>
-                                            )}
-                                          </div>
+                                          <DueDateSelect
+                                            value={task.dueDate}
+                                            onChange={(d) => handleDueDateChange(task.id, d)}
+                                          />
 
                                           <div className="flex items-center gap-1.5">
                                             {task.assigneeAvatar && (
@@ -678,18 +822,10 @@ export default function TaskBoard() {
                                                 className="w-4 h-4 rounded-full"
                                               />
                                             )}
-                                            <select
+                                            <StatusSelect
                                               value={task.status}
-                                              onClick={(e) => e.stopPropagation()}
-                                              onChange={(e) => handleStatusChange(task.id, e.target.value as Task['status'])}
-                                              className="text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-lg px-2 py-0.5 cursor-pointer"
-                                            >
-                                              {COLUMNS.map((c) => (
-                                                <option key={c.id} value={c.id}>
-                                                  → {c.label}
-                                                </option>
-                                              ))}
-                                            </select>
+                                              onChange={(s) => handleStatusChange(task.id, s)}
+                                            />
                                           </div>
                                         </div>
                                       </div>
@@ -745,15 +881,19 @@ export default function TaskBoard() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 pl-7 sm:pl-0 shrink-0">
-                      <span className="text-[10px] px-2 py-0.5 rounded-md text-white font-bold" style={{ backgroundColor: task.projectColor || '#2563eb' }}>
-                        {task.projectName || 'General'}
-                      </span>
+                    <div className="flex items-center gap-2 pl-7 sm:pl-0 shrink-0 flex-wrap">
+                      <ProjectSelect
+                        value={task.projectId}
+                        onChange={(pid) => handleProjectChange(task.id, pid)}
+                      />
                       <PrioritySelect
                         value={task.priority}
                         onChange={(p) => handlePriorityChange(task.id, p)}
                       />
-                      <span className="text-[10px] font-semibold text-slate-400">{task.dueDate || 'No date'}</span>
+                      <DueDateSelect
+                        value={task.dueDate}
+                        onChange={(d) => handleDueDateChange(task.id, d)}
+                      />
                     </div>
                   </div>
                 ))
@@ -764,7 +904,7 @@ export default function TaskBoard() {
           {/* TABLE */}
           {viewMode === 'table' && (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-2xs -mx-2 sm:mx-0">
-              <table className="w-full min-w-[560px] text-left text-xs text-slate-700">
+              <table className="w-full min-w-[720px] text-left text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
                   <tr>
                     <th className="p-3.5">Task</th>
@@ -784,12 +924,16 @@ export default function TaskBoard() {
                     >
                       <td className="p-3.5 font-bold text-slate-900">{task.title}</td>
                       <td className="p-3.5">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold text-white" style={{ backgroundColor: task.projectColor || '#2563eb' }}>
-                          {task.projectName}
-                        </span>
+                        <ProjectSelect
+                          value={task.projectId}
+                          onChange={(pid) => handleProjectChange(task.id, pid)}
+                        />
                       </td>
-                      <td className="p-3.5 capitalize font-semibold text-slate-600">
-                        {task.status.replace('_', ' ')}
+                      <td className="p-3.5">
+                        <StatusSelect
+                          value={task.status}
+                          onChange={(s) => handleStatusChange(task.id, s)}
+                        />
                       </td>
                       <td className="p-3.5">
                         <PrioritySelect
@@ -797,7 +941,12 @@ export default function TaskBoard() {
                           onChange={(p) => handlePriorityChange(task.id, p)}
                         />
                       </td>
-                      <td className="p-3.5 text-slate-500 font-medium">{task.dueDate || '—'}</td>
+                      <td className="p-3.5">
+                        <DueDateSelect
+                          value={task.dueDate}
+                          onChange={(d) => handleDueDateChange(task.id, d)}
+                        />
+                      </td>
                       <td className="p-3.5 text-right">
                         <button
                           onClick={(e) => {
@@ -860,7 +1009,7 @@ export default function TaskBoard() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600 font-semibold"
                   >
                     {projects.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
+                      <option key={p.id} value={p.id}>📁 {p.name}</option>
                     ))}
                   </select>
                 </div>
@@ -948,13 +1097,26 @@ export default function TaskBoard() {
           <div className="w-full sm:max-w-lg bg-white border-l border-slate-200 h-full flex flex-col shadow-2xl pb-16 sm:pb-0">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded-md text-white font-bold"
-                  style={{ backgroundColor: selectedTask.projectColor || '#2563eb' }}
-                >
-                  {selectedTask.projectName || 'General'}
-                </span>
-                {getPriorityBadge(selectedTask.priority)}
+                <ProjectSelect
+                  value={selectedTask.projectId}
+                  onChange={(pid) => {
+                    handleProjectChange(selectedTask.id, pid);
+                    const proj = projects.find((p) => p.id === pid);
+                    setSelectedTask({
+                      ...selectedTask,
+                      projectId: pid,
+                      projectName: proj?.name,
+                      projectColor: proj?.color,
+                    });
+                  }}
+                />
+                <PrioritySelect
+                  value={selectedTask.priority}
+                  onChange={(p) => {
+                    handlePriorityChange(selectedTask.id, p);
+                    setSelectedTask({ ...selectedTask, priority: p });
+                  }}
+                />
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -972,7 +1134,16 @@ export default function TaskBoard() {
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               <div>
                 <h2 className="text-lg font-black text-slate-900">{selectedTask.title}</h2>
-                <p className="text-xs text-slate-400 mt-1 font-medium">📅 Due: {selectedTask.dueDate || 'No date set'}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <DueDateSelect
+                    value={selectedTask.dueDate}
+                    size="md"
+                    onChange={(d) => {
+                      handleDueDateChange(selectedTask.id, d);
+                      setSelectedTask({ ...selectedTask, dueDate: d });
+                    }}
+                  />
+                </div>
               </div>
 
               <div>
@@ -983,13 +1154,13 @@ export default function TaskBoard() {
               </div>
 
               <div>
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Priority</h4>
-                <PrioritySelect
-                  value={selectedTask.priority}
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Status</h4>
+                <StatusSelect
+                  value={selectedTask.status}
                   size="md"
-                  onChange={(p) => {
-                    handlePriorityChange(selectedTask.id, p);
-                    setSelectedTask({ ...selectedTask, priority: p });
+                  onChange={(s) => {
+                    handleStatusChange(selectedTask.id, s);
+                    setSelectedTask({ ...selectedTask, status: s });
                   }}
                 />
               </div>
