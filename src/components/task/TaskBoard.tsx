@@ -43,6 +43,19 @@ const COLUMNS: { id: Task['status']; label: string; dotColor: string; badgeBg: s
   { id: 'done', label: 'Done', dotColor: 'bg-emerald-600', badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 ];
 
+// Priority meta with dot colors + label styling used everywhere
+const PRIORITY_META: Record<
+  Task['priority'],
+  { label: string; dot: string; text: string; activeBg: string; activeBorder: string }
+> = {
+  urgent: { label: 'Urgent', dot: '🔴', text: 'text-rose-600', activeBg: 'bg-rose-50', activeBorder: 'border-rose-300' },
+  high:   { label: 'High',   dot: '🟠', text: 'text-amber-700', activeBg: 'bg-amber-50', activeBorder: 'border-amber-300' },
+  medium: { label: 'Medium', dot: '🔵', text: 'text-blue-700', activeBg: 'bg-blue-50', activeBorder: 'border-blue-300' },
+  low:    { label: 'Low',    dot: '⚪', text: 'text-slate-600', activeBg: 'bg-slate-100', activeBorder: 'border-slate-300' },
+};
+
+const PRIORITY_ORDER: Task['priority'][] = ['low', 'medium', 'high', 'urgent'];
+
 export default function TaskBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -159,6 +172,23 @@ export default function TaskBoard() {
     }
   };
 
+  const handlePriorityChange = async (taskId: string, newPriority: Task['priority']) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, priority: newPriority } : t))
+    );
+
+    try {
+      await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, priority: newPriority }),
+      });
+    } catch (err) {
+      console.error(err);
+      fetchData();
+    }
+  };
+
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
@@ -258,7 +288,6 @@ export default function TaskBoard() {
     return matchesProject && matchesSearch && matchesQuickFilter(task);
   });
 
-  // Quick filter chips (my tasks, urgent, etc.)
   const quickFilters: { id: QuickFilter; label: string; count: number; tone: string }[] = [
     { id: 'all', label: 'All Tasks', count: tasks.length, tone: 'slate' },
     { id: 'mine', label: 'My Tasks', count: tasks.filter((t) => !!currentUserId && t.assignedTo === currentUserId).length, tone: 'blue' },
@@ -269,7 +298,6 @@ export default function TaskBoard() {
     { id: 'unassigned', label: 'Unassigned', count: tasks.filter((t) => !t.assignedTo).length, tone: 'slate' },
   ];
 
-  // Project chips — dynamically generated from projects list
   const projectChips = projects.map((p) => ({
     id: p.id,
     name: p.name,
@@ -305,11 +333,53 @@ export default function TaskBoard() {
     return 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
   };
 
+  // ---------- Priority selector (styled) ----------
+  const PrioritySelect = ({
+    value,
+    onChange,
+    size = 'sm',
+  }: {
+    value: Task['priority'];
+    onChange: (p: Task['priority']) => void;
+    size?: 'sm' | 'md';
+  }) => {
+    const meta = PRIORITY_META[value];
+    const sizeCls =
+      size === 'sm'
+        ? 'text-[10px] px-2 py-0.5 rounded-lg'
+        : 'text-xs px-2.5 py-1.5 rounded-xl';
+    return (
+      <div className="relative inline-flex">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value as Task['priority'])}
+          onClick={(e) => e.stopPropagation()}
+          className={`appearance-none cursor-pointer border font-bold pr-6 ${sizeCls} ${meta.activeBg} ${meta.text} ${meta.activeBorder}`}
+        >
+          {PRIORITY_ORDER.map((p) => (
+            <option key={p} value={p}>
+              {PRIORITY_META[p].dot} {PRIORITY_META[p].label}
+            </option>
+          ))}
+        </select>
+        <svg
+          className={`pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 ${meta.text}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Controls Toolbar */}
       <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-        {/* Row 1: View mode + Project dropdown + Search + New Task */}
+        {/* Row 1 */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center bg-slate-100 p-1 rounded-xl">
@@ -388,7 +458,7 @@ export default function TaskBoard() {
           </div>
         </div>
 
-        {/* Row 2: Quick Filter Chips (priority / status / assignment) */}
+        {/* Row 2: Quick Filters */}
         <div className="pt-2 border-t border-slate-100 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Quick Filters</span>
@@ -417,7 +487,7 @@ export default function TaskBoard() {
           </div>
         </div>
 
-        {/* Row 3: Project Chips (dynamic list of all projects) */}
+        {/* Row 3: Project Chips */}
         {projects.length > 0 && (
           <div className="pt-2 border-t border-slate-100 space-y-2">
             <div className="flex items-center gap-2">
@@ -425,7 +495,6 @@ export default function TaskBoard() {
               <div className="flex-1 h-px bg-slate-100"></div>
             </div>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'thin' }}>
-              {/* All Projects chip */}
               <button
                 onClick={() => setSelectedProject('all')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${
@@ -444,7 +513,6 @@ export default function TaskBoard() {
                 </span>
               </button>
 
-              {/* Per-project chips */}
               {projectChips.map((p) => {
                 const isActive = selectedProject === p.id;
                 return (
@@ -485,7 +553,7 @@ export default function TaskBoard() {
         </div>
       ) : (
         <>
-          {/* VIEW 1: KANBAN BOARD */}
+          {/* KANBAN */}
           {viewMode === 'kanban' && (
             <div className="space-y-4 w-full">
               <div className="md:hidden grid grid-cols-4 gap-1 p-1 bg-slate-200/70 rounded-2xl w-full">
@@ -573,7 +641,10 @@ export default function TaskBoard() {
                                             {task.projectName || 'General'}
                                           </span>
                                           <div className="flex items-center gap-1.5">
-                                            {getPriorityBadge(task.priority)}
+                                            <PrioritySelect
+                                              value={task.priority}
+                                              onChange={(p) => handlePriorityChange(task.id, p)}
+                                            />
                                             <span className="text-slate-300 group-hover:text-slate-500 text-xs font-bold leading-none" title="Drag task">
                                               ⠿
                                             </span>
@@ -638,7 +709,7 @@ export default function TaskBoard() {
             </div>
           )}
 
-          {/* VIEW 2: LIST VIEW */}
+          {/* LIST */}
           {viewMode === 'list' && (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-2xs">
               {filteredTasks.length === 0 ? (
@@ -678,7 +749,10 @@ export default function TaskBoard() {
                       <span className="text-[10px] px-2 py-0.5 rounded-md text-white font-bold" style={{ backgroundColor: task.projectColor || '#2563eb' }}>
                         {task.projectName || 'General'}
                       </span>
-                      {getPriorityBadge(task.priority)}
+                      <PrioritySelect
+                        value={task.priority}
+                        onChange={(p) => handlePriorityChange(task.id, p)}
+                      />
                       <span className="text-[10px] font-semibold text-slate-400">{task.dueDate || 'No date'}</span>
                     </div>
                   </div>
@@ -687,7 +761,7 @@ export default function TaskBoard() {
             </div>
           )}
 
-          {/* VIEW 3: TABLE VIEW */}
+          {/* TABLE */}
           {viewMode === 'table' && (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-2xs -mx-2 sm:mx-0">
               <table className="w-full min-w-[560px] text-left text-xs text-slate-700">
@@ -717,7 +791,12 @@ export default function TaskBoard() {
                       <td className="p-3.5 capitalize font-semibold text-slate-600">
                         {task.status.replace('_', ' ')}
                       </td>
-                      <td className="p-3.5">{getPriorityBadge(task.priority)}</td>
+                      <td className="p-3.5">
+                        <PrioritySelect
+                          value={task.priority}
+                          onChange={(p) => handlePriorityChange(task.id, p)}
+                        />
+                      </td>
                       <td className="p-3.5 text-slate-500 font-medium">{task.dueDate || '—'}</td>
                       <td className="p-3.5 text-right">
                         <button
@@ -793,10 +872,11 @@ export default function TaskBoard() {
                     onChange={(e) => setFormPriority(e.target.value as Task['priority'])}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600 font-semibold"
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
+                    {PRIORITY_ORDER.map((p) => (
+                      <option key={p} value={p}>
+                        {PRIORITY_META[p].dot} {PRIORITY_META[p].label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -900,6 +980,18 @@ export default function TaskBoard() {
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
                   {selectedTask.description || 'No description provided.'}
                 </div>
+              </div>
+
+              <div>
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Priority</h4>
+                <PrioritySelect
+                  value={selectedTask.priority}
+                  size="md"
+                  onChange={(p) => {
+                    handlePriorityChange(selectedTask.id, p);
+                    setSelectedTask({ ...selectedTask, priority: p });
+                  }}
+                />
               </div>
 
               <div>
