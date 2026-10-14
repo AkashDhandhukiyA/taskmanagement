@@ -150,7 +150,6 @@ export default function TaskBoard() {
     }
   };
 
-  // Generic partial update for a task
   const handleTaskPatch = async (taskId: string, patch: Partial<Task>) => {
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
@@ -291,13 +290,6 @@ export default function TaskBoard() {
     { id: 'unassigned', label: 'Unassigned', count: tasks.filter((t) => !t.assignedTo).length, tone: 'slate' },
   ];
 
-  const projectChips = projects.map((p) => ({
-    id: p.id,
-    name: p.name,
-    color: p.color || '#2563eb',
-    count: tasks.filter((t) => t.projectId === p.id).length,
-  }));
-
   const getPriorityBadge = (priority: Task['priority']) => {
     switch (priority) {
       case 'urgent':
@@ -325,8 +317,6 @@ export default function TaskBoard() {
     }
     return 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
   };
-
-  // ---------- Reusable styled inline selectors ----------
 
   const PrioritySelect = ({
     value,
@@ -461,7 +451,6 @@ export default function TaskBoard() {
     );
   };
 
-  // Date + quick actions
   const formatDateLabel = (iso?: string | null) => {
     if (!iso) return 'No date';
     const d = new Date(iso + 'T00:00:00');
@@ -635,64 +624,6 @@ export default function TaskBoard() {
             })}
           </div>
         </div>
-
-        {/* Project Chips */}
-        {projects.length > 0 && (
-          <div className="pt-2 border-t border-slate-100 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Projects</span>
-              <div className="flex-1 h-px bg-slate-100"></div>
-            </div>
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'thin' }}>
-              <button
-                onClick={() => setSelectedProject('all')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${
-                  selectedProject === 'all'
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                <span>All</span>
-                <span
-                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
-                    selectedProject === 'all' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  {tasks.length}
-                </span>
-              </button>
-
-              {projectChips.map((p) => {
-                const isActive = selectedProject === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedProject(p.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${
-                      isActive
-                        ? 'text-white shadow-sm'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                    }`}
-                    style={isActive ? { backgroundColor: p.color, borderColor: p.color } : undefined}
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: isActive ? '#ffffff' : p.color }}
-                    ></span>
-                    <span className="truncate max-w-[110px]">{p.name}</span>
-                    <span
-                      className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
-                        isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      {p.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
       {loading ? (
