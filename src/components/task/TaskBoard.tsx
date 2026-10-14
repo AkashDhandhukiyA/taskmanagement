@@ -53,7 +53,7 @@ export default function TaskBoard() {
   const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'table'>('kanban');
   const [activeMobileLane, setActiveMobileLane] = useState<Task['status']>('todo');
 
-  // ✅ NEW: Quick filter chip state
+  // Quick filter chip state
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
 
   // Modals state
@@ -258,9 +258,9 @@ export default function TaskBoard() {
     return matchesProject && matchesSearch && matchesQuickFilter(task);
   });
 
-  // Chip definitions with live counts
+  // Quick filter chips (my tasks, urgent, etc.)
   const quickFilters: { id: QuickFilter; label: string; count: number; tone: string }[] = [
-    { id: 'all', label: 'All', count: tasks.length, tone: 'slate' },
+    { id: 'all', label: 'All Tasks', count: tasks.length, tone: 'slate' },
     { id: 'mine', label: 'My Tasks', count: tasks.filter((t) => !!currentUserId && t.assignedTo === currentUserId).length, tone: 'blue' },
     { id: 'urgent', label: 'Urgent', count: tasks.filter((t) => t.priority === 'urgent').length, tone: 'rose' },
     { id: 'high', label: 'High', count: tasks.filter((t) => t.priority === 'high').length, tone: 'amber' },
@@ -268,6 +268,14 @@ export default function TaskBoard() {
     { id: 'overdue', label: 'Overdue', count: tasks.filter((t) => !!t.dueDate && t.dueDate < todayISO && t.status !== 'done').length, tone: 'red' },
     { id: 'unassigned', label: 'Unassigned', count: tasks.filter((t) => !t.assignedTo).length, tone: 'slate' },
   ];
+
+  // Project chips — dynamically generated from projects list
+  const projectChips = projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    color: p.color || '#2563eb',
+    count: tasks.filter((t) => t.projectId === p.id).length,
+  }));
 
   const getPriorityBadge = (priority: Task['priority']) => {
     switch (priority) {
@@ -301,9 +309,8 @@ export default function TaskBoard() {
     <div className="space-y-6">
       {/* Top Controls Toolbar */}
       <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-        {/* Row: View mode + Project + Search + New Task */}
+        {/* Row 1: View mode + Project dropdown + Search + New Task */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
-          {/* View Mode Toggle + Mobile New button */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center bg-slate-100 p-1 rounded-xl">
               <button
@@ -340,7 +347,6 @@ export default function TaskBoard() {
             </button>
           </div>
 
-          {/* Project + Search + Desktop New button */}
           <div className="flex items-center gap-2 flex-1 sm:justify-end">
             <select
               value={selectedProject}
@@ -382,28 +388,94 @@ export default function TaskBoard() {
           </div>
         </div>
 
-        {/* ✅ NEW ROW: Quick Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-100">
-          {quickFilters.map((chip) => {
-            const isActive = quickFilter === chip.id;
-            return (
+        {/* Row 2: Quick Filter Chips (priority / status / assignment) */}
+        <div className="pt-2 border-t border-slate-100 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Quick Filters</span>
+            <div className="flex-1 h-px bg-slate-100"></div>
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'thin' }}>
+            {quickFilters.map((chip) => {
+              const isActive = quickFilter === chip.id;
+              return (
+                <button
+                  key={chip.id}
+                  onClick={() => setQuickFilter(chip.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${chipClass(isActive, chip.tone)}`}
+                >
+                  <span>{chip.label}</span>
+                  <span
+                    className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                      isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {chip.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Row 3: Project Chips (dynamic list of all projects) */}
+        {projects.length > 0 && (
+          <div className="pt-2 border-t border-slate-100 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Projects</span>
+              <div className="flex-1 h-px bg-slate-100"></div>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'thin' }}>
+              {/* All Projects chip */}
               <button
-                key={chip.id}
-                onClick={() => setQuickFilter(chip.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${chipClass(isActive, chip.tone)}`}
+                onClick={() => setSelectedProject('all')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${
+                  selectedProject === 'all'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                }`}
               >
-                <span>{chip.label}</span>
+                <span>All</span>
                 <span
                   className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
-                    isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                    selectedProject === 'all' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
                   }`}
                 >
-                  {chip.count}
+                  {tasks.length}
                 </span>
               </button>
-            );
-          })}
-        </div>
+
+              {/* Per-project chips */}
+              {projectChips.map((p) => {
+                const isActive = selectedProject === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedProject(p.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${
+                      isActive
+                        ? 'text-white shadow-sm'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                    style={isActive ? { backgroundColor: p.color, borderColor: p.color } : undefined}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: isActive ? '#ffffff' : p.color }}
+                    ></span>
+                    <span className="truncate max-w-[110px]">{p.name}</span>
+                    <span
+                      className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                        isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      {p.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -416,7 +488,6 @@ export default function TaskBoard() {
           {/* VIEW 1: KANBAN BOARD */}
           {viewMode === 'kanban' && (
             <div className="space-y-4 w-full">
-              {/* Mobile Lane Tabs */}
               <div className="md:hidden grid grid-cols-4 gap-1 p-1 bg-slate-200/70 rounded-2xl w-full">
                 {COLUMNS.map((col) => {
                   const count = filteredTasks.filter((t) => t.status === col.id).length;
@@ -443,7 +514,6 @@ export default function TaskBoard() {
                 })}
               </div>
 
-              {/* Columns Container */}
               <DragDropContext onDragEnd={onDragEnd}>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
                   {COLUMNS.map((column) => {
@@ -778,7 +848,8 @@ export default function TaskBoard() {
                   onClick={() => setIsCreateOpen(false)}
                   className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800"
                 >
-                  Cancel                </button>
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/30"
