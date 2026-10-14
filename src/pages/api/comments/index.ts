@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { getDb, comments, users, tasks, projects, workspaceMembers } from '../../../db';
+import { getDb, comments, users, tasks, projects, companyMembers } from '../../../db';
 import { getUserFromRequest } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
 import { eq, asc, and } from 'drizzle-orm';
@@ -21,13 +21,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     const db = getDb(locals);
 
-    // Verify task belongs to a workspace user has access to
+    // Verify task belongs to a company user has access to
     const taskAccess = await db
       .select({ id: tasks.id })
       .from(tasks)
       .innerJoin(projects, eq(projects.id, tasks.projectId))
-      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
-      .where(and(eq(tasks.id, taskId), eq(workspaceMembers.userId, auth.userId)))
+      .innerJoin(companyMembers, eq(companyMembers.companyId, projects.companyId))
+      .where(and(eq(tasks.id, taskId), eq(companyMembers.userId, auth.userId)))
       .get();
 
     if (!taskAccess) return errorResponse('Task not found or access denied', 404);
@@ -66,14 +66,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const { taskId, message } = result.data;
     const db = getDb(locals);
 
-    // Verify task belongs to a workspace user has access to
+    // Verify task belongs to a company user has access to
     const taskAccess = await db
       .select({ id: tasks.id })
       .from(tasks)
       .innerJoin(projects, eq(projects.id, tasks.projectId))
-      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
-      .where(and(eq(tasks.id, taskId), eq(workspaceMembers.userId, auth.userId)))
+      .innerJoin(companyMembers, eq(companyMembers.companyId, projects.companyId))
+      .where(and(eq(tasks.id, taskId), eq(companyMembers.userId, auth.userId)))
       .get();
+
 
     if (!taskAccess) return errorResponse('Task not found or access denied', 404);
 

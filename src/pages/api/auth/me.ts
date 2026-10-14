@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getDb, users, workspaces, workspaceMembers } from '../../../db';
+import { getDb, users, companies, companyMembers } from '../../../db';
 import { getUserFromRequest } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
 import { eq } from 'drizzle-orm';
@@ -13,36 +13,54 @@ export const GET: APIRoute = async ({ request, locals }) => {
     }
 
     const db = getDb(locals);
-    const user = await db.select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      avatar: users.avatar,
-      createdAt: users.createdAt,
-    }).from(users).where(eq(users.id, authUser.userId)).get();
+    const user = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        avatar: users.avatar,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(eq(users.id, authUser.userId))
+      .get();
 
     if (!user) {
       return errorResponse('User not found', 404);
     }
 
-    // Fetch user's workspaces
+    // Fetch user's companies
     const memberRows = await db
       .select({
-        workspaceId: workspaces.id,
-        workspaceName: workspaces.name,
-        role: workspaceMembers.role,
-        isOwner: eq(workspaces.ownerId, user.id),
+        companyId: companies.id,
+        companyName: companies.name,
+        timezone: companies.timezone,
+        industry: companies.industry,
+        size: companies.size,
+        role: companyMembers.role,
+        jobTitle: companyMembers.jobTitle,
+        isOwner: eq(companies.ownerId, user.id),
       })
-      .from(workspaceMembers)
-      .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
-      .where(eq(workspaceMembers.userId, user.id))
+      .from(companyMembers)
+      .innerJoin(companies, eq(companies.id, companyMembers.companyId))
+      .where(eq(companyMembers.userId, user.id))
       .all();
+
+    // Map for backward compatibility
+    const workspacesMapped = memberRows.map((m) => ({
+      workspaceId: m.companyId,
+      workspaceName: m.companyName,
+      role: m.role,
+      isOwner: m.isOwner,
+    }));
 
     return successResponse({
       user,
-      workspaces: memberRows,
+      companies: memberRows,
+      workspaces: workspacesMapped,
     });
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to fetch user', 500);
   }
 };
+

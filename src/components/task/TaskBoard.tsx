@@ -89,10 +89,15 @@ export default function TaskBoard() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      const compId =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('activeCompanyId') || localStorage.getItem('activeWorkspaceId')
+          : null;
+
       const [tasksRes, projectsRes, usersRes] = await Promise.all([
-        fetch('/api/tasks'),
-        fetch('/api/projects'),
-        fetch('/api/users'),
+        fetch(compId ? `/api/tasks?companyId=${compId}` : '/api/tasks'),
+        fetch(compId ? `/api/projects?companyId=${compId}` : '/api/projects'),
+        fetch(compId ? `/api/users?companyId=${compId}` : '/api/users'),
       ]);
 
       const tasksJson: any = await tasksRes.json();
@@ -103,8 +108,10 @@ export default function TaskBoard() {
       if (usersJson.users) setTeamMembers(usersJson.users);
       if (projectsJson.projects) {
         setProjects(projectsJson.projects);
-        if (projectsJson.projects.length > 0 && !formProjectId) {
-          setFormProjectId(projectsJson.projects[0].id);
+        if (projectsJson.projects.length > 0) {
+          setFormProjectId((prev) => (prev && projectsJson.projects.some((p: any) => p.id === prev) ? prev : projectsJson.projects[0].id));
+        } else {
+          setFormProjectId('');
         }
       }
     } catch (err) {
@@ -114,8 +121,70 @@ export default function TaskBoard() {
     }
   };
 
+  const openCreateModal = () => {
+    try {
+      const savedPrefs = localStorage.getItem('taskflow_preferences');
+      if (savedPrefs) {
+        const p = JSON.parse(savedPrefs);
+        if (p.defaultPriority) setFormPriority(p.defaultPriority);
+        if (p.defaultProject && projects.some((proj) => proj.id === p.defaultProject)) {
+          setFormProjectId(p.defaultProject);
+        }
+      }
+    } catch {}
+    setIsCreateOpen(true);
+  };
+
   useEffect(() => {
     fetchData();
+
+    // Initialize user preferences
+    try {
+      const savedPrefs = localStorage.getItem('taskflow_preferences');
+      if (savedPrefs) {
+        const p = JSON.parse(savedPrefs);
+        if (p.defaultView && ['kanban', 'list', 'table'].includes(p.defaultView)) {
+          setViewMode(p.defaultView);
+        }
+        if (p.defaultPriority) {
+          setFormPriority(p.defaultPriority);
+        }
+      }
+    } catch {}
+
+    const handleComp = () => fetchData();
+    window.addEventListener('companyChanged', handleComp);
+    window.addEventListener('workspaceChanged', handleComp);
+
+    // Keyboard Shortcuts (n: new task, Escape: close modal)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
+        return;
+      }
+      const savedPrefs = localStorage.getItem('taskflow_preferences');
+      let enabled = true;
+      if (savedPrefs) {
+        try { enabled = JSON.parse(savedPrefs).keyboardShortcuts !== false; } catch {}
+      }
+      if (!enabled) return;
+
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        openCreateModal();
+      } else if (e.key === 'Escape') {
+        setIsCreateOpen(false);
+        setSelectedTask(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('companyChanged', handleComp);
+      window.removeEventListener('workspaceChanged', handleComp);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleCreateTask = async (e: any) => {
@@ -277,7 +346,22 @@ export default function TaskBoard() {
     const matchesSearch =
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesProject && matchesSearch && matchesQuickFilter(task);
+
+    // Auto-archive check
+    let autoArchiveMatch = true;
+    try {
+      const savedPrefs = localStorage.getItem('taskflow_preferences');
+      if (savedPrefs) {
+        const p = JSON.parse(savedPrefs);
+        if (p.autoArchive && task.status === 'done') {
+          const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+          const taskTime = new Date(task.updatedAt || task.createdAt).getTime();
+          if (taskTime < fourteenDaysAgo) autoArchiveMatch = false;
+        }
+      }
+    } catch {}
+
+    return matchesProject && matchesSearch && matchesQuickFilter(task) && autoArchiveMatch;
   });
 
   const quickFilters: { id: QuickFilter; label: string; count: number; tone: string }[] = [
@@ -548,7 +632,7 @@ export default function TaskBoard() {
             </div>
 
             <button
-              onClick={() => setIsCreateOpen(true)}
+              onClick={openCreateModal}
               className="sm:hidden flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
             >
               <span>+ New</span>
@@ -588,7 +672,7 @@ export default function TaskBoard() {
             </div>
 
             <button
-              onClick={() => setIsCreateOpen(true)}
+              onClick={openCreateModal}
               className="hidden sm:flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
             >
               <span>+ New Task</span>

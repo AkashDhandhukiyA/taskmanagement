@@ -1,0 +1,246 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect('/login');
+}
+---
+
+<Layout title="Create Your Company - Acme Corp" activePath="/company/create">
+  <div class="min-h-[85vh] flex items-center justify-center p-4 sm:p-6 md:p-8">
+    <div class="w-full max-w-2xl bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-2xl shadow-blue-500/5 relative">
+      {/* Step Badge */}
+      <div class="flex items-center gap-2 mb-4">
+        <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-[10px] font-extrabold uppercase tracking-wider border border-blue-200">
+          Step 2 of 2 • Company Setup
+        </span>
+      </div>
+
+      <div class="mb-6">
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Set up your company</h1>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
+          Create your company organization. All team members, projects, and task sprints will be organized inside this company.
+        </p>
+      </div>
+
+      <!-- Error Alert -->
+      <div id="errorAlert" class="hidden mb-5 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold"></div>
+
+      <form id="createCompanyForm" class="space-y-5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Company Name *</label>
+          <input
+            type="text"
+            id="companyName"
+            required
+            placeholder="e.g. Acme Innovations, NextGen Software, DesignCraft"
+            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Company Timezone *</label>
+            <select
+              id="companyTimezone"
+              required
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium cursor-pointer"
+            >
+              <option value="UTC">UTC (Coordinated Universal Time)</option>
+              <option value="America/New_York">America/New York (EST/EDT)</option>
+              <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+              <option value="America/Denver">America/Denver (MST/MDT)</option>
+              <option value="America/Los_Angeles">America/Los Angeles (PST/PDT)</option>
+              <option value="America/Toronto">America/Toronto (Eastern)</option>
+              <option value="America/Sao_Paulo">America/Sao Paulo (BRT)</option>
+              <option value="Europe/London">Europe/London (GMT/BST)</option>
+              <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+              <option value="Europe/Berlin">Europe/Berlin (CET/CEST)</option>
+              <option value="Europe/Amsterdam">Europe/Amsterdam (CET/CEST)</option>
+              <option value="Asia/Dubai">Asia/Dubai (GST - UTC+4)</option>
+              <option value="Asia/Kolkata">Asia/Kolkata (IST - UTC+5:30)</option>
+              <option value="Asia/Singapore">Asia/Singapore (SGT - UTC+8)</option>
+              <option value="Asia/Tokyo">Asia/Tokyo (JST - UTC+9)</option>
+              <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+              <option value="Pacific/Auckland">Pacific/Auckland (NZST)</option>
+            </select>
+            <p class="text-[10px] text-slate-400 mt-1">Used for sprint dead-lines and scheduling</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Industry</label>
+            <select
+              id="companyIndustry"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium cursor-pointer"
+            >
+              <option value="Technology & Software">Technology & Software</option>
+              <option value="Design & Creative Agency">Design & Creative Agency</option>
+              <option value="Marketing & Advertising">Marketing & Advertising</option>
+              <option value="Financial Services & Fintech">Financial Services & Fintech</option>
+              <option value="Healthcare & Life Sciences">Healthcare & Life Sciences</option>
+              <option value="E-commerce & Retail">E-commerce & Retail</option>
+              <option value="Education & EdTech">Education & EdTech</option>
+              <option value="Consulting & Professional Services">Consulting & Professional Services</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Company Size</label>
+            <select
+              id="companySize"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium cursor-pointer"
+            >
+              <option value="1-10">1-10 employees (Startup / Small team)</option>
+              <option value="11-50">11-50 employees (Growth stage)</option>
+              <option value="51-200">51-200 employees (Scale-up)</option>
+              <option value="201-500">201-500 employees (Mid-market)</option>
+              <option value="500+">500+ employees (Enterprise)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Your Role in Company</label>
+            <input
+              type="text"
+              id="jobTitle"
+              placeholder="e.g. Founder & CEO, Product Lead"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">Website (Optional)</label>
+          <input
+            type="url"
+            id="companyWebsite"
+            placeholder="https://yourcompany.com"
+            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
+          />
+        </div>
+
+        {/* Live Preview Card */}
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-blue-50/60 to-indigo-50/60 border border-blue-100 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div id="previewAvatar" class="w-10 h-10 rounded-xl bg-blue-600 text-white font-black text-sm flex items-center justify-center shadow-sm">
+              C
+            </div>
+            <div>
+              <p id="previewName" class="text-xs font-bold text-slate-900">Your Company Name</p>
+              <p id="previewTz" class="text-[10px] text-slate-500 font-mono mt-0.5">🌐 UTC</p>
+            </div>
+          </div>
+          <span class="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-extrabold uppercase">
+            Owner: {user.name}
+          </span>
+        </div>
+
+        <button
+          type="submit"
+          id="submitBtn"
+          class="w-full py-3 px-5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-blue-600/30 transition-all cursor-pointer flex items-center justify-center gap-2 mt-4"
+        >
+          <span>Complete Setup & Enter Dashboard</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('createCompanyForm');
+    const errorAlert = document.getElementById('errorAlert');
+    const submitBtn = document.getElementById('submitBtn');
+    const nameInput = document.getElementById('companyName') as HTMLInputElement;
+    const tzSelect = document.getElementById('companyTimezone') as HTMLSelectElement;
+    const previewName = document.getElementById('previewName');
+    const previewTz = document.getElementById('previewTz');
+    const previewAvatar = document.getElementById('previewAvatar');
+
+    // Auto-detect browser timezone
+    try {
+      const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (detectedTz && tzSelect) {
+        // Check if exists in options, or append
+        let match = Array.from(tzSelect.options).find((opt) => opt.value === detectedTz);
+        if (!match) {
+          const opt = document.createElement('option');
+          opt.value = detectedTz;
+          opt.textContent = `${detectedTz} (Local detected)`;
+          tzSelect.insertBefore(opt, tzSelect.firstChild);
+          tzSelect.value = detectedTz;
+        } else {
+          tzSelect.value = detectedTz;
+        }
+      }
+    } catch (e) {
+      // fallback
+    }
+
+    // Dynamic live preview update
+    function updatePreview() {
+      const val = nameInput?.value?.trim() || 'Your Company Name';
+      if (previewName) previewName.textContent = val;
+      if (previewAvatar) previewAvatar.textContent = val.charAt(0).toUpperCase();
+      if (previewTz) previewTz.textContent = `🌐 ${tzSelect?.value || 'UTC'}`;
+    }
+
+    nameInput?.addEventListener('input', updatePreview);
+    tzSelect?.addEventListener('change', updatePreview);
+    updatePreview();
+
+    // Form submission
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorAlert?.classList.add('hidden');
+      if (submitBtn) submitBtn.setAttribute('disabled', 'true');
+
+      const name = nameInput.value.trim();
+      const timezone = tzSelect.value;
+      const industry = (document.getElementById('companyIndustry') as HTMLSelectElement).value;
+      const size = (document.getElementById('companySize') as HTMLSelectElement).value;
+      const jobTitle = (document.getElementById('jobTitle') as HTMLInputElement).value.trim();
+      const website = (document.getElementById('companyWebsite') as HTMLInputElement).value.trim();
+
+      try {
+        const res = await fetch('/api/companies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            timezone,
+            industry,
+            size,
+            jobTitle: jobTitle || 'Founder / Owner',
+            website: website || undefined,
+          }),
+        });
+
+        const data: any = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to create company');
+        }
+
+        if (data.company?.id) {
+          localStorage.setItem('activeCompanyId', data.company.id);
+          localStorage.setItem('activeWorkspaceId', data.company.id);
+        }
+
+        window.location.href = '/dashboard';
+      } catch (err: any) {
+        if (errorAlert) {
+          errorAlert.textContent = err.message;
+          errorAlert.classList.remove('hidden');
+        }
+      } finally {
+        if (submitBtn) submitBtn.removeAttribute('disabled');
+      }
+    });
+  </script>
+</Layout>

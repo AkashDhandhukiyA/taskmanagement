@@ -1,21 +1,23 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { getDb, workspaces, workspaceMembers, projects } from '../../../db';
+import { getDb, companies, companyMembers, projects } from '../../../db';
 import { getUserFromRequest } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
 import { eq, and } from 'drizzle-orm';
 
 const createWorkspaceSchema = z.object({
-  name: z.string().min(2, 'Workspace name must be at least 2 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  timezone: z.string().optional(),
 });
 
 const updateWorkspaceSchema = z.object({
-  id: z.string().min(1, 'Workspace ID is required'),
-  name: z.string().min(2, 'Workspace name must be at least 2 characters'),
+  id: z.string().min(1, 'ID is required'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  timezone: z.string().optional(),
 });
 
 const deleteWorkspaceSchema = z.object({
-  id: z.string().min(1, 'Workspace ID is required'),
+  id: z.string().min(1, 'ID is required'),
 });
 
 export const GET: APIRoute = async ({ request, locals }) => {
@@ -24,29 +26,36 @@ export const GET: APIRoute = async ({ request, locals }) => {
     if (!auth) return errorResponse('Unauthorized', 401);
 
     const db = getDb(locals);
-    const userWorkspaces = await db
+    const userCompanies = await db
       .select({
-        id: workspaces.id,
-        name: workspaces.name,
-        ownerId: workspaces.ownerId,
-        createdAt: workspaces.createdAt,
-        role: workspaceMembers.role,
+        id: companies.id,
+        name: companies.name,
+        timezone: companies.timezone,
+        industry: companies.industry,
+        size: companies.size,
+        logo: companies.logo,
+        ownerId: companies.ownerId,
+        createdAt: companies.createdAt,
+        role: companyMembers.role,
       })
-      .from(workspaceMembers)
-      .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
-      .where(eq(workspaceMembers.userId, auth.userId))
+      .from(companyMembers)
+      .innerJoin(companies, eq(companies.id, companyMembers.companyId))
+      .where(eq(companyMembers.userId, auth.userId))
       .all();
 
-    const seenWorkspaceIds = new Set<string>();
-    const deduplicatedWorkspaces = userWorkspaces.filter((w) => {
-      if (seenWorkspaceIds.has(w.id)) return false;
-      seenWorkspaceIds.add(w.id);
+    const seenIds = new Set<string>();
+    const deduplicated = userCompanies.filter((w) => {
+      if (seenIds.has(w.id)) return false;
+      seenIds.add(w.id);
       return true;
     });
 
-    return successResponse({ workspaces: deduplicatedWorkspaces });
+    return successResponse({
+      workspaces: deduplicated,
+      companies: deduplicated,
+    });
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to fetch workspaces', 500);
+    return errorResponse(err.message || 'Failed to fetch companies', 500);
   }
 };
 
@@ -60,43 +69,50 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (!result.success) return errorResponse(result.error.errors[0].message, 400);
 
     const db = getDb(locals);
-    const workspaceId = crypto.randomUUID();
+    const companyId = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    await db.insert(workspaces).values({
-      id: workspaceId,
+    await db.insert(companies).values({
+      id: companyId,
       name: result.data.name,
+      timezone: result.data.timezone || 'UTC',
+      industry: 'Technology',
+      size: '1-10',
       ownerId: auth.userId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await db.insert(companyMembers).values({
+      id: crypto.randomUUID(),
+      companyId,
+      userId: auth.userId,
+      role: 'owner',
+      jobTitle: 'Company Owner',
       createdAt: now,
     });
 
-    await db.insert(workspaceMembers).values({
-      id: crypto.randomUUID(),
-      workspaceId,
-      userId: auth.userId,
-      role: 'owner',
-    });
-
-    // Create default project in this workspace
+    // Create default project
     const projectId = crypto.randomUUID();
     await db.insert(projects).values({
       id: projectId,
-      workspaceId,
-      name: 'Default Project',
-      description: 'Workspace initial project',
+      companyId,
+      name: 'General Tasks',
+      description: 'Default project workspace',
       color: '#6366f1',
       createdAt: now,
     });
 
     return successResponse(
       {
-        workspace: { id: workspaceId, name: result.data.name, role: 'owner' },
-        message: 'Workspace created successfully',
+        workspace: { id: companyId, name: result.data.name, role: 'owner' },
+        company: { id: companyId, name: result.data.name, role: 'owner' },
+        message: 'Company created successfully',
       },
       201
     );
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to create workspace', 500);
+    return errorResponse(err.message || 'Failed to create company', 500);
   }
 };
 
@@ -110,14 +126,13 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     if (!result.success) return errorResponse(result.error.errors[0].message, 400);
 
     const db = getDb(locals);
-    // Verify membership
     const membership = await db
       .select()
-      .from(workspaceMembers)
+      .from(companyMembers)
       .where(
         and(
-          eq(workspaceMembers.workspaceId, result.data.id),
-          eq(workspaceMembers.userId, auth.userId)
+          eq(companyMembers.companyId, result.data.id),
+          eq(companyMembers.userId, auth.userId)
         )
       )
       .get();
@@ -127,85 +142,56 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     }
 
     await db
-      .update(workspaces)
-      .set({ name: result.data.name })
-      .where(eq(workspaces.id, result.data.id));
+      .update(companies)
+      .set({
+        name: result.data.name,
+        ...(result.data.timezone ? { timezone: result.data.timezone } : {}),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(companies.id, result.data.id));
 
-    return successResponse({ message: 'Workspace updated successfully' });
+    return successResponse({ message: 'Company updated successfully' });
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to update workspace', 500);
+    return errorResponse(err.message || 'Failed to update company', 500);
   }
 };
 
-/**
- * Shared delete logic used by the DELETE export below.
- * Accepts the workspace ID from either a JSON body or the query string.
- */
-export async function deleteWorkspaceById(
-  id: string,
-  authUserId: string,
-  locals: App.Locals
-): Promise<Response> {
-  const db = getDb(locals);
-
-  const workspace = await db.select().from(workspaces).where(eq(workspaces.id, id)).get();
-  if (!workspace) return errorResponse('Workspace not found', 404);
-
-  // Verify membership + role
-  const membership = await db
-    .select()
-    .from(workspaceMembers)
-    .where(and(eq(workspaceMembers.workspaceId, id), eq(workspaceMembers.userId, authUserId)))
-    .get();
-
-  if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
-    return errorResponse('Forbidden: insufficient permissions', 403);
-  }
-
-  // Extra safety: only the actual owner can delete the workspace
-  if (workspace.ownerId !== authUserId) {
-    return errorResponse('Only the owner can delete the workspace', 403);
-  }
-
-  // Clean up related rows
-  await db.delete(workspaceMembers).where(eq(workspaceMembers.workspaceId, id));
-  await db.delete(projects).where(eq(projects.workspaceId, id));
-  await db.delete(workspaces).where(eq(workspaces.id, id));
-
-  return successResponse({ message: 'Workspace deleted successfully' });
-}
-
-/**
- * DELETE handler that accepts the workspace ID from:
- *   1. JSON body:    { "id": "<id>" }
- *   2. Query string: /api/workspaces?id=<id>
- */
 export const DELETE: APIRoute = async ({ request, locals }) => {
   try {
     const auth = await getUserFromRequest(request);
     if (!auth) return errorResponse('Unauthorized', 401);
 
     let id: string | null = null;
-
-    // 1. Try JSON body
     try {
       const body = await request.clone().json();
       const parsed = deleteWorkspaceSchema.safeParse(body);
       if (parsed.success) id = parsed.data.id;
     } catch {
-      // body empty / not JSON — ignore
+      // not json
     }
 
-    // 2. Fallback to query string
     if (!id) {
       const url = new URL(request.url);
       id = url.searchParams.get('id');
     }
 
-    if (!id) return errorResponse('Workspace ID is required', 400);
+    if (!id) return errorResponse('Company ID is required', 400);
 
-    return await deleteWorkspaceById(id, auth.userId, locals);
+    const db = getDb(locals);
+    const company = await db.select().from(companies).where(eq(companies.id, id)).get();
+    if (!company) return errorResponse('Company not found', 404);
+
+    if (company.ownerId !== auth.userId) {
+      return errorResponse('Only the owner can delete the company', 403);
+    }
+
+    await db.delete(companyMembers).where(eq(companyMembers.companyId, id));
+    await db.delete(projects).where(eq(projects.companyId, id));
+    await db.delete(companies).where(eq(companies.id, id));
+
+    return successResponse({ message: 'Company deleted successfully' });
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to delete workspace', 500);
+    return errorResponse(err.message || 'Failed to delete company', 500);
   }
 };
+

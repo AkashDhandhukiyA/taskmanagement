@@ -11,11 +11,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const pathname = url.pathname;
 
   // Protect private app pages
-  const protectedPrefixes = ['/dashboard', '/workspace', '/projects', '/tasks', '/settings'];
+  const protectedPrefixes = ['/dashboard', '/company', '/workspace', '/projects', '/tasks', '/settings', '/audit-log'];
   const isProtected = protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
 
   if (isProtected && !user) {
     return context.redirect('/login');
+  }
+
+  // Redirect legacy /workspace to /company
+  if (pathname.startsWith('/workspace')) {
+    return context.redirect('/company');
   }
 
   // Redirect logged-in users away from auth pages
@@ -25,3 +30,4 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   return next();
 });
+

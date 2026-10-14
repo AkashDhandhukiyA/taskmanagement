@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getDb, users, workspaceMembers } from '../../../db';
+import { getDb, users, companyMembers } from '../../../db';
 import { getUserFromRequest } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -10,19 +10,19 @@ export const GET: APIRoute = async ({ request, locals }) => {
     if (!auth) return errorResponse('Unauthorized', 401);
 
     const url = new URL(request.url);
-    const workspaceId = url.searchParams.get('workspaceId');
+    const targetCompanyId = url.searchParams.get('companyId') || url.searchParams.get('workspaceId');
 
     const db = getDb(locals);
 
-    if (workspaceId) {
-      // Verify user has access to this workspace
+    if (targetCompanyId) {
+      // Verify user has access to this company
       const hasAccess = await db
         .select()
-        .from(workspaceMembers)
-        .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, auth.userId)))
+        .from(companyMembers)
+        .where(and(eq(companyMembers.companyId, targetCompanyId), eq(companyMembers.userId, auth.userId)))
         .get();
 
-      if (!hasAccess) return errorResponse('Forbidden: Not a member of this workspace', 403);
+      if (!hasAccess) return errorResponse('Forbidden: Not a member of this company', 403);
 
       const members = await db
         .select({
@@ -30,11 +30,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
           name: users.name,
           email: users.email,
           avatar: users.avatar,
-          role: workspaceMembers.role,
+          role: companyMembers.role,
+          jobTitle: companyMembers.jobTitle,
         })
-        .from(workspaceMembers)
-        .innerJoin(users, eq(users.id, workspaceMembers.userId))
-        .where(eq(workspaceMembers.workspaceId, workspaceId))
+        .from(companyMembers)
+        .innerJoin(users, eq(users.id, companyMembers.userId))
+        .where(eq(companyMembers.companyId, targetCompanyId))
         .all();
 
       // Deduplicate members
@@ -48,17 +49,17 @@ export const GET: APIRoute = async ({ request, locals }) => {
       return successResponse({ users: deduplicatedMembers });
     }
 
-    // When no workspaceId is given, find all workspaces the user is part of
-    const userWorkspaceMemberships = await db
-      .select({ workspaceId: workspaceMembers.workspaceId })
-      .from(workspaceMembers)
-      .where(eq(workspaceMembers.userId, auth.userId))
+    // When no companyId is given, find all companies the user is part of
+    const userCompanyMemberships = await db
+      .select({ companyId: companyMembers.companyId })
+      .from(companyMembers)
+      .where(eq(companyMembers.userId, auth.userId))
       .all();
 
-    const workspaceIds = userWorkspaceMemberships.map((w) => w.workspaceId);
+    const companyIds = userCompanyMemberships.map((w) => w.companyId);
 
     let deduplicatedUsers: any[] = [];
-    if (workspaceIds.length > 0) {
+    if (companyIds.length > 0) {
       const teamMembers = await db
         .select({
           id: users.id,
@@ -66,9 +67,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
           email: users.email,
           avatar: users.avatar,
         })
-        .from(workspaceMembers)
-        .innerJoin(users, eq(users.id, workspaceMembers.userId))
-        .where(inArray(workspaceMembers.workspaceId, workspaceIds))
+        .from(companyMembers)
+        .innerJoin(users, eq(users.id, companyMembers.userId))
+        .where(inArray(companyMembers.companyId, companyIds))
         .all();
 
       const seen = new Set<string>();
@@ -106,11 +107,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (!auth) return errorResponse('Unauthorized', 401);
 
     const body: any = await request.json();
-    const { workspaceId, userId, email, role = 'member' } = body;
+    const { companyId, workspaceId, userId, email, role = 'member', jobTitle } = body;
+    const targetCompanyId = companyId || workspaceId;
 
     const identifier = (userId || email || '').trim();
-    if (!workspaceId || !identifier) {
-      return errorResponse('Workspace ID and User ID or Email are required', 400);
+    if (!targetCompanyId || !identifier) {
+      return errorResponse('Company ID and User ID or Email are required', 400);
     }
 
     const db = getDb(locals);
@@ -138,25 +140,27 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Check if user is already a member of this workspace
+    // Check if user is already a member of this company
     const existingMembership = await db
       .select()
-      .from(workspaceMembers)
-      .where(eq(workspaceMembers.workspaceId, workspaceId))
+      .from(companyMembers)
+      .where(eq(companyMembers.companyId, targetCompanyId))
       .all();
 
     const isAlreadyMember = existingMembership.some((m) => m.userId === existingUser!.id);
     if (isAlreadyMember) {
-      return errorResponse(`"${existingUser.name || existingUser.email}" is already a member of this workspace`, 400);
+      return errorResponse(`"${existingUser.name || existingUser.email}" is already a member of this company`, 400);
     }
 
-    // Add to workspace
+    // Add to company
     const memberId = crypto.randomUUID();
-    await db.insert(workspaceMembers).values({
+    await db.insert(companyMembers).values({
       id: memberId,
-      workspaceId,
+      companyId: targetCompanyId,
       userId: existingUser.id,
       role: role as 'owner' | 'admin' | 'member',
+      jobTitle: jobTitle || 'Team Member',
+      createdAt: new Date().toISOString(),
     });
 
     return successResponse({
@@ -167,10 +171,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
         email: existingUser.email,
         avatar: existingUser.avatar,
         role,
+        jobTitle: jobTitle || 'Team Member',
       },
     });
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to add member', 500);
   }
 };
+
 

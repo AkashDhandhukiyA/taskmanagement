@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 export default function MobileDashboard({ user }: { user: any }) {
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
-  const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
 
@@ -12,31 +13,54 @@ export default function MobileDashboard({ user }: { user: any }) {
   const [newTaskProject, setNewTaskProject] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState('high');
 
-  useEffect(() => {
-    async function fetchAll() {
-      try {
-        const [tRes, pRes, wRes] = await Promise.all([
-          fetch('/api/tasks'),
-          fetch('/api/projects'),
-          fetch('/api/workspaces'),
-        ]);
-        const tData: any = await tRes.json();
-        const pData: any = await pRes.json();
-        const wData: any = await wRes.json();
+  const fetchAll = async () => {
+    try {
+      const [tRes, pRes, cRes] = await Promise.all([
+        fetch('/api/tasks'),
+        fetch('/api/projects'),
+        fetch('/api/companies'),
+      ]);
+      const tData: any = await tRes.json();
+      const pData: any = await pRes.json();
+      const cData: any = await cRes.json();
 
-        if (tData.tasks) setTasks(tData.tasks);
-        if (pData.projects) {
-          setProjects(pData.projects);
-          if (pData.projects.length > 0) setNewTaskProject(pData.projects[0].id);
-        }
-        if (wData.workspaces) setWorkspaces(wData.workspaces);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
+      if (tData.tasks) setTasks(tData.tasks);
+      if (pData.projects) {
+        setProjects(pData.projects);
+        if (pData.projects.length > 0) setNewTaskProject(pData.projects[0].id);
       }
+      if (cData.companies) {
+        setCompanies(cData.companies);
+        const stored = localStorage.getItem('activeCompanyId') || localStorage.getItem('activeWorkspaceId');
+        if (stored && cData.companies.some((c: any) => c.id === stored)) {
+          setActiveCompanyId(stored);
+        } else if (cData.companies.length > 0) {
+          setActiveCompanyId(cData.companies[0].id);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchAll();
+
+    const handleCompChange = (e: any) => {
+      if (e.detail?.companyId) {
+        setActiveCompanyId(e.detail.companyId);
+      }
+      fetchAll();
+    };
+
+    window.addEventListener('companyChanged', handleCompChange);
+    window.addEventListener('workspaceChanged', handleCompChange);
+    return () => {
+      window.removeEventListener('companyChanged', handleCompChange);
+      window.removeEventListener('workspaceChanged', handleCompChange);
+    };
   }, []);
 
   const handleCreateTask = async (e: React.FormEvent) => {
@@ -77,7 +101,9 @@ export default function MobileDashboard({ user }: { user: any }) {
   const dueTodayCount = tasks.filter((t) => t.dueDate === todayStr && t.status !== 'done').length;
   const completionPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
 
-  const currentWorkspaceName = workspaces[0]?.name || 'My Workspace';
+  const currentCompany = companies.find((c) => c.id === activeCompanyId) || companies[0];
+  const currentCompanyName = currentCompany?.name || 'My Company';
+  const currentCompanyTimezone = currentCompany?.timezone || 'UTC';
   const userName = user?.name ? user.name.split(' ')[0] : 'User';
 
   // Real upcoming tasks (not done, prioritized by due date)
@@ -106,16 +132,18 @@ export default function MobileDashboard({ user }: { user: any }) {
               <span className="text-2xl">👋</span>
             </div>
             <p className="text-xs text-slate-500 mt-1.5 font-medium">
-              You have <strong className="text-slate-800 font-bold">{dueTodayCount} task{dueTodayCount === 1 ? '' : 's'} due today</strong> across {workspaces.length} active workspace{workspaces.length === 1 ? '' : 's'}.
+              You have <strong className="text-slate-800 font-bold">{dueTodayCount} task{dueTodayCount === 1 ? '' : 's'} due today</strong> across {companies.length} active compan{companies.length === 1 ? 'y' : 'ies'}.
             </p>
           </div>
 
-          {/* Workspace Badge */}
+          {/* Company Badge with Timezone */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100/70 border border-blue-200/60 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <span className="text-xs font-bold text-blue-900 truncate max-w-[140px]">{currentWorkspaceName}</span>
+            <span className="text-xs font-bold text-blue-900 truncate max-w-[140px]">{currentCompanyName}</span>
+            <span className="text-[10px] text-blue-600 font-mono font-bold hidden sm:inline">({currentCompanyTimezone})</span>
           </div>
         </div>
+
 
         {/* Hero Card: Sprint Pace */}
         <div className="rounded-3xl bg-gradient-to-br from-[#eff5ff] via-[#f4f7fe] to-[#e8f0fe] p-5 border border-blue-100 shadow-sm relative overflow-hidden">
@@ -134,7 +162,7 @@ export default function MobileDashboard({ user }: { user: any }) {
                 {completedCount} of {totalTasks} Tasks Done
               </h2>
               <p className="text-[11px] text-slate-500 font-medium max-w-[200px] leading-snug">
-                {totalTasks === 0 ? 'No tasks created yet in this workspace.' : `${completionPercentage}% overall completion rate.`}
+                {totalTasks === 0 ? 'No tasks created yet in this company.' : `${completionPercentage}% overall completion rate.`}
               </p>
             </div>
 
@@ -167,7 +195,7 @@ export default function MobileDashboard({ user }: { user: any }) {
 
           {/* Footer Bar inside Hero Card */}
           <div className="mt-5 pt-3 border-t border-blue-200/50 flex items-center justify-between text-[11px] font-bold">
-            <span className="text-slate-500">Workspace Progress</span>
+            <span className="text-slate-500">Company Progress</span>
             <span className="text-blue-600">{completedCount}/{totalTasks} Completed</span>
           </div>
           <div className="h-1.5 w-full bg-blue-100 rounded-full mt-1.5 overflow-hidden">
@@ -200,7 +228,7 @@ export default function MobileDashboard({ user }: { user: any }) {
             </a>
 
             <a
-              href="/workspace"
+              href="/company"
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 active:scale-95 text-slate-700 font-bold text-xs border border-slate-200 shadow-2xs transition-all shrink-0"
             >
               <span>👥</span>
@@ -209,10 +237,10 @@ export default function MobileDashboard({ user }: { user: any }) {
           </div>
         </section>
 
-        {/* Workspace Pulse 2x2 Grid with 100% Real Numbers */}
+        {/* Company Pulse 2x2 Grid with 100% Real Numbers */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-black text-sm text-slate-900 tracking-tight">Workspace Pulse</h3>
+            <h3 className="font-black text-sm text-slate-900 tracking-tight">Company Pulse</h3>
             <span className="text-[11px] font-semibold text-slate-400">Real-time metrics</span>
           </div>
 

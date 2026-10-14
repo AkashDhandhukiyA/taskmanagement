@@ -1,0 +1,33 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CompanyManager from '../../components/company/CompanyManager';
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect('/login');
+}
+---
+
+<Layout title="Company & Team - Acme Corp" activePath="/company">
+  <div class="space-y-6 max-w-7xl mx-auto px-4 md:px-6 py-4">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-200/80">
+      <div>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Company & Team Members</h1>
+        <p class="text-xs text-slate-500 font-medium mt-1">
+          Manage company properties, timezone settings, and team member roles & permissions
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a
+          href="/company/create"
+          class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold shadow-sm shadow-blue-600/25 transition-all flex items-center gap-1.5"
+        >
+          <span>+ Create Company</span>
+        </a>
+      </div>
+    </div>
+
+    <CompanyManager client:load />
+  </div>
+</Layout>

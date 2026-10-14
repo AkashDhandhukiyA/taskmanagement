@@ -1,14 +1,27 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
     --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --accent-color: #7c3aed;
+    --accent-light: #f5f3ff;
+    --accent-border: #ddd6fe;
     --background: #f8faff;
     --foreground: #0f172a;
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
+    --primary: #7c3aed;
     --card: #ffffff;
     --border: #e2e8f0;
+  }
+
+  html.dark {
+    --background: #0b1120;
+    --foreground: #f8fafc;
+    --card: #131c31;
+    --border: #1e293b;
+    --accent-light: rgba(124, 58, 237, 0.15);
+    --accent-border: rgba(124, 58, 237, 0.35);
+    color-scheme: dark;
   }
 }
 
@@ -20,6 +33,124 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* ========================================================
+   FULL DARK MODE ENGINE
+   ======================================================== */
+html.dark body {
+  background-color: #0b1120 !important;
+  color: #f8fafc !important;
+}
+
+html.dark aside,
+html.dark header,
+html.dark nav,
+html.dark [class*="bg-white"]:not([class*="dark:"]) {
+  background-color: #131c31 !important;
+  color: #f8fafc !important;
+  border-color: #1e293b !important;
+}
+
+html.dark [class*="bg-slate-50"]:not([class*="dark:"]),
+html.dark [class*="bg-slate-100"]:not([class*="dark:"]) {
+  background-color: #18233c !important;
+  border-color: #233150 !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80 {
+  border-color: #1e293b !important;
+}
+
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b !important;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #18233c !important;
+  color: #f8fafc !important;
+  border-color: #283756 !important;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  border-color: var(--accent-color, #7c3aed) !important;
+}
+
+html.dark .shadow-xs,
+html.dark .shadow-2xs,
+html.dark .shadow-sm {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
+/* ========================================================
+   DYNAMIC ACCENT COLOR ENGINE
+   ======================================================== */
+.bg-blue-600,
+.btn-primary,
+button.bg-blue-600,
+a.bg-blue-600 {
+  background-color: var(--accent-color, #2563eb) !important;
+}
+
+.text-blue-600,
+.text-blue-700 {
+  color: var(--accent-color, #2563eb) !important;
+}
+
+.border-blue-600 {
+  border-color: var(--accent-color, #2563eb) !important;
+}
+
+/* Active navigation item */
+a[class*="bg-blue-50"] {
+  background-color: var(--accent-light, #eff6ff) !important;
+  color: var(--accent-color, #2563eb) !important;
+  border-color: var(--accent-border, #bfdbfe) !important;
+}
+
+html.dark a[class*="bg-blue-50"] {
+  background-color: rgba(124, 58, 237, 0.22) !important;
+  color: #ddd6fe !important;
+  border-color: rgba(124, 58, 237, 0.45) !important;
+}
+
+/* ========================================================
+   LAYOUT DENSITY ENGINE
+   ======================================================== */
+[data-density="compact"] .p-5,
+[data-density="compact"] .p-6 {
+  padding: 1rem !important;
+}
+[data-density="comfortable"] .p-5,
+[data-density="comfortable"] .p-6 {
+  padding: 1.75rem !important;
 }
 
 /* Custom crisp scrollbars */
@@ -36,4 +167,14 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #0b1120;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #25334e;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #384c72;
 }

@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import MobileDashboard from '../components/dashboard/MobileDashboard';
+import DashboardManager from '../components/dashboard/DashboardManager';
 
 const user = Astro.locals.user;
 if (!user) {
@@ -8,11 +8,8 @@ if (!user) {
 }
 ---
 
-<Layout title="Dashboard - Acme Corp" activePath="/dashboard">
-  {/* On Mobile: renders centered mobile app layout; On Desktop: renders full responsive dashboard */}
-  <div class="w-full">
-    <div class="max-w-xl md:max-w-6xl mx-auto px-4 md:px-8 py-5 md:py-8">
-      <MobileDashboard client:load user={user} />
-    </div>
+<Layout title="Dashboard - TaskFlow" activePath="/dashboard">
+  <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+    <DashboardManager client:load user={user} />
   </div>
 </Layout>

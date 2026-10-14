@@ -8,14 +8,14 @@ if (!user) return Astro.redirect('/login');
   <div class="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6">
     <div class="pb-3 border-b border-slate-200/80">
       <h1 class="text-2xl font-black text-slate-900 tracking-tight">Audit Log</h1>
-      <p class="text-xs text-slate-500 font-medium mt-1">Every change made in this workspace, in chronological order</p>
+      <p class="text-xs text-slate-500 font-medium mt-1">Every change made in this company, in chronological order</p>
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
       <button data-filter="all" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-800 bg-slate-800 text-white cursor-pointer">All</button>
       <button data-filter="task" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Tasks</button>
       <button data-filter="project" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Projects</button>
-      <button data-filter="workspace" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Workspaces</button>
+      <button data-filter="company" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Company</button>
       <button data-filter="member" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Members</button>
       <button data-filter="comment" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Comments</button>
     </div>
@@ -46,7 +46,7 @@ if (!user) return Astro.redirect('/login');
     function entityLabel(type: string) {
       if (type === 'task') return 'Task';
       if (type === 'project') return 'Project';
-      if (type === 'workspace') return 'Workspace';
+      if (type === 'company' || type === 'workspace') return 'Company';
       if (type === 'member') return 'Member';
       if (type === 'comment') return 'Comment';
       return type;
@@ -120,22 +120,26 @@ if (!user) return Astro.redirect('/login');
       });
     });
 
-    (async () => {
+    async function fetchAuditEvents() {
       const list = document.getElementById('auditList');
       if (!list) return;
-      const wsId = localStorage.getItem('activeWorkspaceId');
-      if (!wsId) {
-        list.innerHTML = '<div class="p-8 text-center text-xs text-slate-400">Select a workspace first.</div>';
+      const compId = localStorage.getItem('activeCompanyId') || localStorage.getItem('activeWorkspaceId');
+      if (!compId) {
+        list.innerHTML = '<div class="p-8 text-center text-xs text-slate-400">Select a company first.</div>';
         return;
       }
       try {
-        const res = await fetch(`/api/audit-log?workspaceId=${wsId}`);
+        const res = await fetch(`/api/audit-log?companyId=${compId}`);
         const data: any = await res.json();
         allEvents = data.events || [];
         renderList();
       } catch {
         list.innerHTML = '<div class="p-8 text-center text-xs text-rose-500">Failed to load audit events.</div>';
       }
-    })();
+    }
+
+    fetchAuditEvents();
+    window.addEventListener('companyChanged', fetchAuditEvents);
+    window.addEventListener('workspaceChanged', fetchAuditEvents);
   </script>
 </Layout>

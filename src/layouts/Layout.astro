@@ -8,7 +8,7 @@ interface Props {
   activePath?: string;
 }
 
-const { title = 'Acme Corp - TaskFlow', description = 'Modern task and project management on Cloudflare D1', activePath = '' } = Astro.props;
+const { title = 'TaskFlow - Modern Project & Company Management', description = 'Modern agile task and company management on Cloudflare D1', activePath = '' } = Astro.props;
 const rawUser = Astro.locals.user;
 const user: any = rawUser;
 ---
@@ -27,13 +27,32 @@ const user: any = rawUser;
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
+    <script is:inline>
+      (function() {
+        try {
+          const theme = localStorage.getItem('taskflow_theme') || 'light';
+          const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+          const accent = localStorage.getItem('taskflow_accent');
+          if (accent) {
+            document.documentElement.style.setProperty('--accent-color', accent);
+          }
+          const density = localStorage.getItem('taskflow_density') || 'compact';
+          document.documentElement.setAttribute('data-density', density);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body class="bg-[#f8faff] text-slate-900 min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif] overflow-x-hidden">
     {user ? (
       <div class="flex min-h-screen min-w-0 max-w-full">
         {/* ============ DESKTOP SIDEBAR (md and up) ============ */}
         <aside class="hidden md:flex w-60 lg:w-64 xl:w-72 bg-white border-r border-slate-200/80 flex-col fixed inset-y-0 z-30 shadow-xs">
-          {/* Logo + Workspace Switcher */}
+          {/* Logo + Company Switcher */}
           <div class="relative border-b border-slate-100" id="wsSwitcherWrap">
             <button
               id="wsSwitcherBtn"
@@ -41,18 +60,18 @@ const user: any = rawUser;
               class="w-full h-16 flex items-center px-4 lg:px-5 gap-3 hover:bg-slate-50/70 transition-colors cursor-pointer text-left"
               aria-haspopup="listbox"
               aria-expanded="false"
-              aria-label="Switch workspace"
+              aria-label="Switch company"
             >
               <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shadow-blue-500/30 shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
 
               <div class="flex items-center gap-1.5 flex-1 min-w-0">
                 <span id="wsSwitcherName" class="font-bold text-sm text-slate-900 truncate">Loading...</span>
-                <span class="hidden lg:inline-block px-1.5 py-0.2 rounded-md bg-blue-50 text-[10px] font-bold text-blue-600 border border-blue-200 shrink-0">
-                  Pro
+                <span id="wsSwitcherTz" class="hidden xl:inline-block px-1.5 py-0.5 rounded-md bg-slate-100 text-[9px] font-mono font-semibold text-slate-600 border border-slate-200 shrink-0 truncate max-w-[80px]">
+                  UTC
                 </span>
               </div>
 
@@ -74,19 +93,20 @@ const user: any = rawUser;
               class="hidden absolute left-2 right-2 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 py-1.5 z-50 max-h-[70vh] overflow-y-auto"
               role="listbox"
             >
-              <div class="px-3 py-2 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Workspace</p>
+              <div class="px-3 py-2 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl flex items-center justify-between">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Company</p>
+                <a href="/company/create" class="text-[10px] font-bold text-blue-600 hover:text-blue-700">+ New</a>
               </div>
               <div id="wsSwitcherList" class="py-1"></div>
-              <div class="border-t border-slate-100 mt-1 pt-1">
+              <div class="border-t border-slate-100 mt-1 pt-1 space-y-1">
                 <a
-                  href="/workspace"
+                  href="/company"
                   class="flex items-center gap-2 px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-xl mx-1 transition-colors"
                 >
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                   </svg>
-                  Manage Workspaces
+                  Manage Company & Team
                 </a>
               </div>
             </div>
@@ -94,7 +114,7 @@ const user: any = rawUser;
 
           {/* Navigation Links */}
           <nav class="flex-1 px-3 py-4 lg:py-5 space-y-1 overflow-y-auto">
-            <div class="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Workspace</div>
+            <div class="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Company</div>
 
             <a
               href="/dashboard"
@@ -133,15 +153,15 @@ const user: any = rawUser;
             </a>
 
             <a
-              href="/workspace"
+              href="/company"
               class={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                activePath === '/workspace'
+                activePath === '/company' || activePath === '/workspace'
                   ? 'bg-blue-50 text-blue-600 border border-blue-100 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-              <span class="truncate">Team & Workspaces</span>
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+              <span class="truncate">Company & Team</span>
             </a>
 
             <a
@@ -200,7 +220,7 @@ const user: any = rawUser;
         <div class="flex-1 md:ml-60 lg:ml-64 xl:ml-72 flex flex-col min-h-screen min-w-0 max-w-full overflow-x-hidden">
           {/* Top Navbar */}
           <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-20 flex items-center justify-between gap-2 px-3 sm:px-4 md:px-6 lg:px-8">
-            {/* Mobile / Tablet — Workspace switcher */}
+            {/* Mobile / Tablet — Company switcher */}
             <div class="flex items-center gap-2 relative min-w-0 flex-1 md:hidden" id="wsMobileWrap">
               <button
                 id="wsMobileBtn"
@@ -208,11 +228,11 @@ const user: any = rawUser;
                 class="flex items-center gap-2 cursor-pointer text-left min-w-0 max-w-full active:scale-[0.98] transition-transform"
                 aria-haspopup="listbox"
                 aria-expanded="false"
-                aria-label="Switch workspace"
+                aria-label="Switch company"
               >
                 <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shadow-blue-500/30 shrink-0">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
                 <div class="flex items-center gap-1 min-w-0">
@@ -232,25 +252,26 @@ const user: any = rawUser;
                 </div>
               </button>
 
-              {/* Mobile dropdown — positioned from right edge, safe on tiny screens */}
+              {/* Mobile dropdown */}
               <div
                 id="wsMobileMenu"
                 class="hidden absolute left-0 top-full mt-2 w-[min(calc(100vw-1.5rem),17rem)] bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 py-1.5 z-50 max-h-[70vh] overflow-y-auto"
                 role="listbox"
               >
-                <div class="px-3 py-2 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl">
-                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Workspace</p>
+                <div class="px-3 py-2 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl flex items-center justify-between">
+                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Company</p>
+                  <a href="/company/create" class="text-[10px] font-bold text-blue-600">+ New</a>
                 </div>
                 <div id="wsMobileList" class="py-1"></div>
                 <div class="border-t border-slate-100 mt-1 pt-1">
                   <a
-                    href="/workspace"
+                    href="/company"
                     class="flex items-center gap-2 px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-xl mx-1 transition-colors"
                   >
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                     </svg>
-                    Manage Workspaces
+                    Manage Company & Team
                   </a>
                 </div>
               </div>
@@ -300,13 +321,13 @@ const user: any = rawUser;
             </a>
 
             <a
-              href="/workspace"
+              href="/company"
               class={`flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-1.5 rounded-2xl transition-all active:scale-95 min-w-[56px] ${
-                activePath === '/workspace' ? 'text-blue-600 font-bold bg-blue-50/80 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
+                activePath === '/company' || activePath === '/workspace' ? 'text-blue-600 font-bold bg-blue-50/80 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
               }`}
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-              <span class="text-[10px]">Team</span>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+              <span class="text-[10px]">Company</span>
             </a>
 
             <a
@@ -370,15 +391,17 @@ const user: any = rawUser;
         });
       }
 
-      // ---------- Workspace Switcher ----------
+      // ---------- Company Switcher ----------
       (function () {
-        const STORAGE_KEY = 'activeWorkspaceId';
+        const STORAGE_KEY = 'activeCompanyId';
+        const LEGACY_STORAGE_KEY = 'activeWorkspaceId';
 
         const wrap = document.getElementById('wsSwitcherWrap');
         const btn = document.getElementById('wsSwitcherBtn');
         const menu = document.getElementById('wsSwitcherMenu');
         const list = document.getElementById('wsSwitcherList');
         const nameEl = document.getElementById('wsSwitcherName');
+        const tzEl = document.getElementById('wsSwitcherTz');
         const chevron = document.getElementById('wsSwitcherChevron');
 
         const mobileWrap = document.getElementById('wsMobileWrap');
@@ -390,29 +413,30 @@ const user: any = rawUser;
 
         if (!btn && !mobileBtn) return;
 
-        let workspaces = [];
-        let activeId = localStorage.getItem(STORAGE_KEY) || '';
+        let companies = [];
+        let activeId = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || '';
 
-        function setActiveDisplay(ws) {
-          const name = ws?.name || 'Workspace';
+        function setActiveDisplay(company) {
+          const name = company?.name || 'Company';
           if (nameEl) nameEl.textContent = name;
           if (mobileName) mobileName.textContent = name;
+          if (tzEl) tzEl.textContent = company?.timezone || 'UTC';
         }
 
         function renderList(container) {
           if (!container) return;
           container.innerHTML = '';
 
-          if (!workspaces.length) {
+          if (!companies.length) {
             const empty = document.createElement('div');
             empty.className = 'px-3 py-2 text-xs text-slate-400';
-            empty.textContent = 'No workspaces found';
+            empty.textContent = 'No companies found';
             container.appendChild(empty);
             return;
           }
 
-          workspaces.forEach((ws) => {
-            const isActive = ws.id === activeId;
+          companies.forEach((comp) => {
+            const isActive = comp.id === activeId;
             const el = document.createElement('button');
             el.type = 'button';
             el.className =
@@ -423,33 +447,39 @@ const user: any = rawUser;
             el.innerHTML =
               '<div class="flex items-center gap-2 min-w-0">' +
                 '<div class="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-black shrink-0">' +
-                  ws.name.charAt(0).toUpperCase() +
+                  (comp.name ? comp.name.charAt(0).toUpperCase() : 'C') +
                 '</div>' +
                 '<div class="min-w-0">' +
-                  '<p class="truncate">' + ws.name + '</p>' +
-                  '<p class="text-[9px] text-slate-400 capitalize leading-none mt-0.5">' + (ws.role || 'member') + '</p>' +
+                  '<p class="truncate">' + comp.name + '</p>' +
+                  '<p class="text-[9px] text-slate-400 capitalize leading-none mt-0.5 font-mono">' +
+                    (comp.timezone || 'UTC') + ' • ' + (comp.role || 'member') +
+                  '</p>' +
                 '</div>' +
               '</div>' +
               (isActive
                 ? '<svg class="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
                 : '');
 
-            el.addEventListener('click', () => selectWorkspace(ws.id));
+            el.addEventListener('click', () => selectCompany(comp.id));
             container.appendChild(el);
           });
         }
 
-        function selectWorkspace(id) {
+        function selectCompany(id) {
           activeId = id;
           localStorage.setItem(STORAGE_KEY, id);
-          const ws = workspaces.find((w) => w.id === id);
-          setActiveDisplay(ws);
+          localStorage.setItem(LEGACY_STORAGE_KEY, id);
+          const comp = companies.find((c) => c.id === id);
+          setActiveDisplay(comp);
           renderList(list);
           renderList(mobileList);
           closeMenus();
 
           window.dispatchEvent(
-            new CustomEvent('workspaceChanged', { detail: { workspaceId: id, workspace: ws } })
+            new CustomEvent('companyChanged', { detail: { companyId: id, company: comp } })
+          );
+          window.dispatchEvent(
+            new CustomEvent('workspaceChanged', { detail: { workspaceId: id, workspace: comp } })
           );
         }
 
@@ -457,7 +487,6 @@ const user: any = rawUser;
           closeMenus();
           m?.classList.remove('hidden');
           if (c) c.style.transform = 'rotate(180deg)';
-          // aria
           if (m === menu && btn) btn.setAttribute('aria-expanded', 'true');
           if (m === mobileMenu && mobileBtn) mobileBtn.setAttribute('aria-expanded', 'true');
         }
@@ -483,19 +512,16 @@ const user: any = rawUser;
           else closeMenus();
         });
 
-        // Close on outside tap / click
         document.addEventListener('click', (e) => {
           const t = e.target;
           if ((wrap && wrap.contains(t)) || (mobileWrap && mobileWrap.contains(t))) return;
           closeMenus();
         });
 
-        // Close on Escape
         document.addEventListener('keydown', (e) => {
           if (e.key === 'Escape') closeMenus();
         });
 
-        // Close on orientation / resize (avoids ghost dropdowns on breakpoints)
         let rt;
         window.addEventListener('resize', () => {
           clearTimeout(rt);
@@ -503,32 +529,39 @@ const user: any = rawUser;
         });
 
         // Initial load
-        (async function loadWorkspaces() {
+        (async function loadCompanies() {
           try {
-            const res = await fetch('/api/workspaces');
+            const res = await fetch('/api/companies');
             const data = await res.json();
-            workspaces = data.workspaces || [];
+            companies = data.companies || [];
 
-            if (!workspaces.length) {
+            if (!companies.length) {
               setActiveDisplay(null);
               renderList(list);
               renderList(mobileList);
+
+              // If logged-in user has 0 companies, redirect them to create one (unless already on create page)
+              if (window.location.pathname !== '/company/create' && !window.location.pathname.startsWith('/api/')) {
+                window.location.href = '/company/create';
+              }
               return;
             }
 
-            if (!activeId || !workspaces.some((w) => w.id === activeId)) {
-              activeId = workspaces[0].id;
+            if (!activeId || !companies.some((c) => c.id === activeId)) {
+              activeId = companies[0].id;
               localStorage.setItem(STORAGE_KEY, activeId);
+              localStorage.setItem(LEGACY_STORAGE_KEY, activeId);
             }
 
-            setActiveDisplay(workspaces.find((w) => w.id === activeId));
+            setActiveDisplay(companies.find((c) => c.id === activeId));
             renderList(list);
             renderList(mobileList);
           } catch (err) {
-            console.error('Failed to load workspaces', err);
+            console.error('Failed to load companies', err);
           }
         })();
       })();
     </script>
   </body>
 </html>
+

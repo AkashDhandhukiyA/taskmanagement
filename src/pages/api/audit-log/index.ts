@@ -10,8 +10,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
     if (!auth) return errorResponse('Unauthorized', 401);
 
     const url = new URL(request.url);
-    const workspaceId = url.searchParams.get('workspaceId');
-    if (!workspaceId) return errorResponse('workspaceId is required', 400);
+    const targetCompanyId = url.searchParams.get('companyId') || url.searchParams.get('workspaceId');
+    if (!targetCompanyId) return errorResponse('companyId is required', 400);
 
     const db = getDb(locals);
     const rows = await db
@@ -29,7 +29,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       })
       .from(auditLog)
       .leftJoin(users, eq(users.id, auditLog.userId))
-      .where(eq(auditLog.workspaceId, workspaceId))
+      .where(eq(auditLog.companyId, targetCompanyId))
       .orderBy(desc(auditLog.createdAt))
       .limit(200)
       .all();
@@ -39,3 +39,4 @@ export const GET: APIRoute = async ({ request, locals }) => {
     return errorResponse(err.message || 'Failed to load audit log', 500);
   }
 };
+

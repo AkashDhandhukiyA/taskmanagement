@@ -1,12 +1,13 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { getDb, projects, workspaceMembers } from '../../../db';
+import { getDb, projects, companyMembers } from '../../../db';
 import { getUserFromRequest } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
 import { eq, and } from 'drizzle-orm';
 
 const createProjectSchema = z.object({
-  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  companyId: z.string().optional(),
+  workspaceId: z.string().optional(),
   name: z.string().min(1, 'Project name is required'),
   description: z.string().optional(),
   color: z.string().default('#6366f1'),
@@ -25,46 +26,49 @@ export const GET: APIRoute = async ({ request, locals }) => {
     if (!auth) return errorResponse('Unauthorized', 401);
 
     const url = new URL(request.url);
-    const workspaceId = url.searchParams.get('workspaceId');
+    const targetCompanyId = url.searchParams.get('companyId') || url.searchParams.get('workspaceId');
 
     const db = getDb(locals);
 
-    if (workspaceId) {
-      // Check user belongs to workspace
+    if (targetCompanyId) {
+      // Check user belongs to company
       const member = await db
         .select()
-        .from(workspaceMembers)
-        .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, auth.userId)))
+        .from(companyMembers)
+        .where(and(eq(companyMembers.companyId, targetCompanyId), eq(companyMembers.userId, auth.userId)))
         .get();
 
-      if (!member) return errorResponse('Forbidden: Not a workspace member', 403);
+      if (!member) return errorResponse('Forbidden: Not a company member', 403);
 
-      const projectList = await db.select().from(projects).where(eq(projects.workspaceId, workspaceId)).all();
-      return successResponse({ projects: projectList });
+      const projectList = await db.select().from(projects).where(eq(projects.companyId, targetCompanyId)).all();
+      const mapped = projectList.map((p) => ({ ...p, workspaceId: p.companyId }));
+      return successResponse({ projects: mapped });
     }
 
-    // Return projects across all user workspaces
+    // Return projects across all user companies
     const userProjects = await db
       .select({
         id: projects.id,
-        workspaceId: projects.workspaceId,
+        companyId: projects.companyId,
         name: projects.name,
         description: projects.description,
         color: projects.color,
         createdAt: projects.createdAt,
       })
       .from(projects)
-      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
-      .where(eq(workspaceMembers.userId, auth.userId))
+      .innerJoin(companyMembers, eq(companyMembers.companyId, projects.companyId))
+      .where(eq(companyMembers.userId, auth.userId))
       .all();
 
     // Deduplicate in case of duplicate memberships
     const seen = new Set<string>();
-    const deduplicatedProjects = userProjects.filter((p) => {
-      if (seen.has(p.id)) return false;
-      seen.add(p.id);
-      return true;
-    });
+    const deduplicatedProjects = userProjects
+      .filter((p) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      })
+      .map((p) => ({ ...p, workspaceId: p.companyId }));
 
     return successResponse({ projects: deduplicatedProjects });
   } catch (err: any) {
@@ -81,34 +85,48 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const result = createProjectSchema.safeParse(body);
     if (!result.success) return errorResponse(result.error.errors[0].message, 400);
 
-    const { workspaceId, name, description, color } = result.data;
+    const compId = result.data.companyId || result.data.workspaceId;
+    if (!compId) return errorResponse('Company ID is required', 400);
+
+    const { name, description, color } = result.data;
     const db = getDb(locals);
 
     // Verify membership
     const member = await db
       .select()
-      .from(workspaceMembers)
-      .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, auth.userId)))
+      .from(companyMembers)
+      .where(and(eq(companyMembers.companyId, compId), eq(companyMembers.userId, auth.userId)))
       .get();
 
-    if (!member) return errorResponse('Not a member of this workspace', 403);
+    if (!member) return errorResponse('Not a member of this company', 403);
 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
     await db.insert(projects).values({
       id,
-      workspaceId,
+      companyId: compId,
       name,
       description: description || null,
       color: color || '#6366f1',
       createdAt: now,
     });
 
-    return successResponse({
-      project: { id, workspaceId, name, description, color, createdAt: now },
-      message: 'Project created successfully',
-    }, 201);
+    return successResponse(
+      {
+        project: {
+          id,
+          companyId: compId,
+          workspaceId: compId,
+          name,
+          description,
+          color,
+          createdAt: now,
+        },
+        message: 'Project created successfully',
+      },
+      201
+    );
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to create project', 500);
   }
@@ -129,8 +147,8 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     const existing = await db
       .select({ id: projects.id })
       .from(projects)
-      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
-      .where(and(eq(projects.id, id), eq(workspaceMembers.userId, auth.userId)))
+      .innerJoin(companyMembers, eq(companyMembers.companyId, projects.companyId))
+      .where(and(eq(projects.id, id), eq(companyMembers.userId, auth.userId)))
       .get();
 
     if (!existing) return errorResponse('Project not found or access denied', 404);
@@ -164,8 +182,8 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
     const existing = await db
       .select({ id: projects.id })
       .from(projects)
-      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
-      .where(and(eq(projects.id, id), eq(workspaceMembers.userId, auth.userId)))
+      .innerJoin(companyMembers, eq(companyMembers.companyId, projects.companyId))
+      .where(and(eq(projects.id, id), eq(companyMembers.userId, auth.userId)))
       .get();
 
     if (!existing) return errorResponse('Project not found or access denied', 404);
@@ -176,3 +194,4 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
     return errorResponse(err.message || 'Failed to delete project', 500);
   }
 };
+

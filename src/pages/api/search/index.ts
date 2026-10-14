@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getDb, tasks, projects, workspaceMembers } from '../../../db';
+import { getDb, tasks, projects, companyMembers } from '../../../db';
 import { getUserFromRequest } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
 import { like, or, and, eq } from 'drizzle-orm';
@@ -18,7 +18,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     const db = getDb(locals);
 
-    // Search tasks belonging only to workspaces the user is a member of
+    // Search tasks belonging only to companies the user is a member of
     const rawTasks = await db
       .select({
         id: tasks.id,
@@ -29,10 +29,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
       })
       .from(tasks)
       .innerJoin(projects, eq(projects.id, tasks.projectId))
-      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
+      .innerJoin(companyMembers, eq(companyMembers.companyId, projects.companyId))
       .where(
         and(
-          eq(workspaceMembers.userId, auth.userId),
+          eq(companyMembers.userId, auth.userId),
           or(like(tasks.title, `%${q}%`), like(tasks.description, `%${q}%`))
         )
       )
@@ -46,7 +46,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       return true;
     }).slice(0, 8);
 
-    // Search projects belonging only to workspaces the user is a member of
+    // Search projects belonging only to companies the user is a member of
     const rawProjects = await db
       .select({
         id: projects.id,
@@ -54,15 +54,16 @@ export const GET: APIRoute = async ({ request, locals }) => {
         color: projects.color,
       })
       .from(projects)
-      .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
+      .innerJoin(companyMembers, eq(companyMembers.companyId, projects.companyId))
       .where(
         and(
-          eq(workspaceMembers.userId, auth.userId),
+          eq(companyMembers.userId, auth.userId),
           like(projects.name, `%${q}%`)
         )
       )
       .limit(10)
       .all();
+
 
     const seenProjectIds = new Set<string>();
     const matchedProjects = rawProjects.filter((p) => {

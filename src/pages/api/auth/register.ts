@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { getDb, users, workspaces, workspaceMembers, projects } from '../../../db';
+import { getDb, users } from '../../../db';
 import { hashPassword, createToken } from '../../../lib/auth';
 import { errorResponse, successResponse } from '../../../utils/api';
 import { eq } from 'drizzle-orm';
@@ -32,9 +32,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const hashedPassword = await hashPassword(password);
     const userId = crypto.randomUUID();
-    const workspaceId = crypto.randomUUID();
-    const memberId = crypto.randomUUID();
-    const projectId = crypto.randomUUID();
     const now = new Date().toISOString();
 
     // Insert user
@@ -44,32 +41,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
       email: email.toLowerCase(),
       password: hashedPassword,
       avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`,
-      createdAt: now,
-    });
-
-    // Create default workspace
-    await db.insert(workspaces).values({
-      id: workspaceId,
-      name: `${name}'s Workspace`,
-      ownerId: userId,
-      createdAt: now,
-    });
-
-    // Add user as workspace owner member
-    await db.insert(workspaceMembers).values({
-      id: memberId,
-      workspaceId,
-      userId,
-      role: 'owner',
-    });
-
-    // Create initial project
-    await db.insert(projects).values({
-      id: projectId,
-      workspaceId,
-      name: 'General Tasks',
-      description: 'Your default project workspace',
-      color: '#6366f1',
       createdAt: now,
     });
 
@@ -85,7 +56,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       {
         token,
         user: { id: userId, name, email: email.toLowerCase() },
-        message: 'Account created successfully',
+        requiresCompany: true,
+        message: 'Account created successfully. Please create your company next.',
       },
       201,
       Object.fromEntries(headers.entries())
@@ -94,3 +66,4 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return errorResponse(err.message || 'Registration failed', 500);
   }
 };
+

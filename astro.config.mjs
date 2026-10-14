@@ -13,7 +13,11 @@ export default defineConfig({
   session: false,
 
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: ['@hello-pangea/dnd'],
+      exclude: ['zod'],
+    },
   },
 
   integrations: [react()]

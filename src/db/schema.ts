@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
 export const users = sqliteTable('users', {
@@ -7,26 +7,36 @@ export const users = sqliteTable('users', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
   avatar: text('avatar'),
+  preferences: text('preferences'), // JSON string: { notifications, defaults, theme }
+  twoFactorSecret: text('two_factor_secret'),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
-export const workspaces = sqliteTable('workspaces', {
+export const companies = sqliteTable('companies', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
+  timezone: text('timezone').notNull().default('UTC'),
+  industry: text('industry'),
+  size: text('size'),
+  logo: text('logo'),
+  website: text('website'),
   ownerId: text('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
-export const workspaceMembers = sqliteTable('workspace_members', {
+export const companyMembers = sqliteTable('company_members', {
   id: text('id').primaryKey(),
-  workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   role: text('role').notNull().default('member'), // owner | admin | member
+  jobTitle: text('job_title'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
-  workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description'),
   color: text('color').notNull().default('#6366f1'),
@@ -54,16 +64,15 @@ export const comments = sqliteTable('comments', {
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
-// ============ NEW: Audit Log ============
 export const auditLog = sqliteTable('audit_log', {
   id: text('id').primaryKey(),
-  workspaceId: text('workspace_id')
+  companyId: text('company_id')
     .notNull()
-    .references(() => workspaces.id, { onDelete: 'cascade' }),
+    .references(() => companies.id, { onDelete: 'cascade' }),
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  // Category of change: 'task' | 'project' | 'workspace' | 'member' | 'comment'
+  // Category of change: 'task' | 'project' | 'company' | 'member' | 'comment'
   entityType: text('entity_type').notNull(),
   // ID of the row that changed (e.g. task id, project id)
   entityId: text('entity_id').notNull(),
@@ -76,40 +85,44 @@ export const auditLog = sqliteTable('audit_log', {
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Backward-compatibility exports during migration
+export const workspaces = companies;
+export const workspaceMembers = companyMembers;
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
-  ownedWorkspaces: many(workspaces),
-  workspaceMemberships: many(workspaceMembers),
+  ownedCompanies: many(companies),
+  companyMemberships: many(companyMembers),
   assignedTasks: many(tasks),
   comments: many(comments),
   auditEntries: many(auditLog),
 }));
 
-export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
+export const companiesRelations = relations(companies, ({ one, many }) => ({
   owner: one(users, {
-    fields: [workspaces.ownerId],
+    fields: [companies.ownerId],
     references: [users.id],
   }),
-  members: many(workspaceMembers),
+  members: many(companyMembers),
   projects: many(projects),
   auditEntries: many(auditLog),
 }));
 
-export const workspaceMembersRelations = relations(workspaceMembers, ({ one }) => ({
-  workspace: one(workspaces, {
-    fields: [workspaceMembers.workspaceId],
-    references: [workspaces.id],
+export const companyMembersRelations = relations(companyMembers, ({ one }) => ({
+  company: one(companies, {
+    fields: [companyMembers.companyId],
+    references: [companies.id],
   }),
   user: one(users, {
-    fields: [workspaceMembers.userId],
+    fields: [companyMembers.userId],
     references: [users.id],
   }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
-  workspace: one(workspaces, {
-    fields: [projects.workspaceId],
-    references: [workspaces.id],
+  company: one(companies, {
+    fields: [projects.companyId],
+    references: [companies.id],
   }),
   tasks: many(tasks),
 }));
@@ -138,12 +151,13 @@ export const commentsRelations = relations(comments, ({ one }) => ({
 }));
 
 export const auditLogRelations = relations(auditLog, ({ one }) => ({
-  workspace: one(workspaces, {
-    fields: [auditLog.workspaceId],
-    references: [workspaces.id],
+  company: one(companies, {
+    fields: [auditLog.companyId],
+    references: [companies.id],
   }),
   user: one(users, {
     fields: [auditLog.userId],
     references: [users.id],
   }),
 }));
+

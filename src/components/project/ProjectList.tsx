@@ -4,7 +4,7 @@ import type { Project, Task } from '../task/TaskBoard';
 export default function ProjectList() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal
@@ -12,27 +12,30 @@ export default function ProjectList() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('#2563eb');
-  const [workspaceId, setWorkspaceId] = useState('');
+  const [companyId, setCompanyId] = useState('');
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [pRes, tRes, wRes] = await Promise.all([
+      const [pRes, tRes, cRes] = await Promise.all([
         fetch('/api/projects'),
         fetch('/api/tasks'),
-        fetch('/api/workspaces'),
+        fetch('/api/companies'),
       ]);
 
       const pData: any = await pRes.json();
       const tData: any = await tRes.json();
-      const wData: any = await wRes.json();
+      const cData: any = await cRes.json();
 
       if (pData.projects) setProjects(pData.projects);
       if (tData.tasks) setTasks(tData.tasks);
-      if (wData.workspaces) {
-        setWorkspaces(wData.workspaces);
-        if (wData.workspaces.length > 0 && !workspaceId) {
-          setWorkspaceId(wData.workspaces[0].id);
+      if (cData.companies) {
+        setCompanies(cData.companies);
+        const stored = localStorage.getItem('activeCompanyId') || localStorage.getItem('activeWorkspaceId');
+        if (stored && cData.companies.some((c: any) => c.id === stored)) {
+          setCompanyId(stored);
+        } else if (cData.companies.length > 0 && !companyId) {
+          setCompanyId(cData.companies[0].id);
         }
       }
     } catch (e) {
@@ -44,17 +47,31 @@ export default function ProjectList() {
 
   useEffect(() => {
     loadData();
+
+    const handleCompChange = (e: any) => {
+      if (e.detail?.companyId) {
+        setCompanyId(e.detail.companyId);
+      }
+      loadData();
+    };
+
+    window.addEventListener('companyChanged', handleCompChange);
+    window.addEventListener('workspaceChanged', handleCompChange);
+    return () => {
+      window.removeEventListener('companyChanged', handleCompChange);
+      window.removeEventListener('workspaceChanged', handleCompChange);
+    };
   }, []);
 
   const handleCreate = async (e: any) => {
     e.preventDefault();
-    if (!name.trim() || !workspaceId) return;
+    if (!name.trim() || !companyId) return;
 
     try {
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, color, workspaceId }),
+        body: JSON.stringify({ name, description, color, companyId, workspaceId: companyId }),
       });
 
       if (res.ok) {
@@ -67,6 +84,7 @@ export default function ProjectList() {
       console.error(e);
     }
   };
+
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this project? Associated tasks will be removed.')) return;
@@ -192,14 +210,14 @@ export default function ProjectList() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Workspace</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Company</label>
                 <select
-                  value={workspaceId}
-                  onChange={(e) => setWorkspaceId(e.target.value)}
+                  value={companyId}
+                  onChange={(e) => setCompanyId(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600 font-semibold"
                 >
-                  {workspaces.map((w) => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
+                  {companies.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>
