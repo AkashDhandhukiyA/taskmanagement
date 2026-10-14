@@ -188,11 +188,6 @@ export default function HeaderSearchNotifications({ user }: { user: any }) {
           </svg>
         </button>
 
-        <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
-          Cloudflare D1
-        </span>
-
         {/* Notifications Icon & Popover */}
         <div ref={notifRef} className="relative">
           <button
