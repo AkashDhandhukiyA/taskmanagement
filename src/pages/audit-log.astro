@@ -1,0 +1,141 @@
+---
+import Layout from '../layouts/Layout.astro';
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/login');
+---
+
+<Layout title="Audit Log - TaskFlow" activePath="/audit-log">
+  <div class="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6">
+    <div class="pb-3 border-b border-slate-200/80">
+      <h1 class="text-2xl font-black text-slate-900 tracking-tight">Audit Log</h1>
+      <p class="text-xs text-slate-500 font-medium mt-1">Every change made in this workspace, in chronological order</p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <button data-filter="all" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-800 bg-slate-800 text-white cursor-pointer">All</button>
+      <button data-filter="task" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Tasks</button>
+      <button data-filter="project" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Projects</button>
+      <button data-filter="workspace" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Workspaces</button>
+      <button data-filter="member" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Members</button>
+      <button data-filter="comment" class="filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">Comments</button>
+    </div>
+
+    <div id="auditList" class="bg-white border border-slate-200 rounded-2xl divide-y divide-slate-100 shadow-2xs">
+      <div class="p-8 text-center text-xs text-slate-400 font-medium">Loading audit events...</div>
+    </div>
+  </div>
+
+  <script>
+    let allEvents: any[] = [];
+    let currentFilter = 'all';
+
+    function actionTone(action: string) {
+      if (action === 'create') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      if (action === 'update') return 'bg-blue-50 text-blue-700 border-blue-200';
+      if (action === 'delete') return 'bg-rose-50 text-rose-700 border-rose-200';
+      return 'bg-slate-50 text-slate-700 border-slate-200';
+    }
+
+    function actionLabel(action: string) {
+      if (action === 'create') return 'created';
+      if (action === 'update') return 'updated';
+      if (action === 'delete') return 'deleted';
+      return action;
+    }
+
+    function entityLabel(type: string) {
+      if (type === 'task') return 'Task';
+      if (type === 'project') return 'Project';
+      if (type === 'workspace') return 'Workspace';
+      if (type === 'member') return 'Member';
+      if (type === 'comment') return 'Comment';
+      return type;
+    }
+
+    function renderChanges(changesJson: string | null) {
+      if (!changesJson) return '';
+      let changes: Record<string, { from: any; to: any }> = {};
+      try { changes = JSON.parse(changesJson); } catch { return ''; }
+      const keys = Object.keys(changes);
+      if (!keys.length) return '';
+      return '<div class="mt-2 flex flex-wrap gap-1.5">' + keys.map((k) => {
+        const c = changes[k];
+        return `<span class="inline-flex items-center gap-1 text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 rounded-md px-2 py-0.5">
+          <span class="text-slate-400 uppercase tracking-wider">${k}</span>
+          <span class="text-slate-400">${String(c.from ?? '∅')}</span>
+          <span>→</span>
+          <span class="text-blue-600">${String(c.to ?? '∅')}</span>
+        </span>`;
+      }).join('') + '</div>';
+    }
+
+    function renderList() {
+      const list = document.getElementById('auditList');
+      if (!list) return;
+      const events = currentFilter === 'all'
+        ? allEvents
+        : allEvents.filter((e) => e.entityType === currentFilter);
+
+      if (!events.length) {
+        list.innerHTML = '<div class="p-8 text-center text-xs text-slate-400 font-medium">No audit events yet.</div>';
+        return;
+      }
+
+      list.innerHTML = events.map((e) => `
+        <div class="p-4 flex items-start gap-3 hover:bg-slate-50 transition-colors">
+          <div class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-xs font-black text-blue-600 shrink-0 overflow-hidden">
+            ${e.userAvatar
+              ? `<img src="${e.userAvatar}" class="w-full h-full object-cover" alt="" />`
+              : (e.userName || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center flex-wrap gap-1.5">
+              <span class="text-xs font-bold text-slate-900">${e.userName || 'Unknown'}</span>
+              <span class="text-xs text-slate-500">${actionLabel(e.action)}</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${actionTone(e.action)}">
+                ${entityLabel(e.entityType)}
+              </span>
+              ${e.entityName ? `<span class="text-xs font-semibold text-slate-700 truncate max-w-[280px]">"${e.entityName}"</span>` : ''}
+            </div>
+            ${renderChanges(e.changes)}
+          </div>
+          <span class="text-[10px] text-slate-400 font-medium shrink-0 whitespace-nowrap">
+            ${new Date(e.createdAt).toLocaleString()}
+          </span>
+        </div>
+      `).join('');
+    }
+
+    document.querySelectorAll('.filter-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentFilter = btn.getAttribute('data-filter') || 'all';
+        document.querySelectorAll('.filter-btn').forEach((b) => {
+          const isActive = b === btn;
+          b.className = 'filter-btn px-3 py-1.5 rounded-xl text-[11px] font-bold border cursor-pointer ' +
+            (isActive
+              ? 'border-slate-800 bg-slate-800 text-white'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50');
+        });
+        renderList();
+      });
+    });
+
+    (async () => {
+      const list = document.getElementById('auditList');
+      if (!list) return;
+      const wsId = localStorage.getItem('activeWorkspaceId');
+      if (!wsId) {
+        list.innerHTML = '<div class="p-8 text-center text-xs text-slate-400">Select a workspace first.</div>';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/audit-log?workspaceId=${wsId}`);
+        const data: any = await res.json();
+        allEvents = data.events || [];
+        renderList();
+      } catch {
+        list.innerHTML = '<div class="p-8 text-center text-xs text-rose-500">Failed to load audit events.</div>';
+      }
+    })();
+  </script>
+</Layout>
