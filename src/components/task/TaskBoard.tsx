@@ -318,6 +318,8 @@ export default function TaskBoard() {
     return 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
   };
 
+  // ---------- Reusable styled inline selectors ----------
+
   const PrioritySelect = ({
     value,
     onChange,
@@ -359,6 +361,7 @@ export default function TaskBoard() {
     );
   };
 
+  // ✅ FIXED — clean pill, no overlay that overflows
   const ProjectSelect = ({
     value,
     onChange,
@@ -370,18 +373,22 @@ export default function TaskBoard() {
   }) => {
     const proj = projects.find((p) => p.id === value);
     const color = proj?.color || '#2563eb';
-    const label = proj?.name || 'General';
     const sizeCls =
       size === 'sm'
         ? 'text-[10px] px-2 py-0.5 rounded-lg'
         : 'text-xs px-2.5 py-1.5 rounded-xl';
+
     return (
-      <div className="relative inline-flex max-w-full">
+      <div className="relative inline-flex items-center max-w-[140px]">
+        <span
+          className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/90 z-10"
+          aria-hidden
+        ></span>
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onClick={(e) => e.stopPropagation()}
-          className={`appearance-none cursor-pointer font-bold pr-6 text-white border ${sizeCls}`}
+          className={`appearance-none cursor-pointer font-bold text-white border pr-6 pl-4 truncate ${sizeCls}`}
           style={{ backgroundColor: color, borderColor: color }}
         >
           {projects.map((p) => (
@@ -390,15 +397,8 @@ export default function TaskBoard() {
             </option>
           ))}
         </select>
-        <span
-          className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/80"
-          aria-hidden
-        ></span>
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center pl-3 pr-6 truncate text-white font-bold pointer-events-none">
-          {label}
-        </span>
         <svg
-          className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-white"
+          className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-white z-10"
           fill="none"
           stroke="currentColor"
           strokeWidth="3"
