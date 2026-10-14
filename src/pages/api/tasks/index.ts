@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { getDb, tasks, projects, users, workspaceMembers } from '../../../db';
-import { getUserFromRequest } from '../../../lib/auth';
-import { errorResponse, successResponse } from '../../../utils/api';
+import { getDb, tasks, projects, users, workspaceMembers, auditLog } from '../../../../db';
+import { getUserFromRequest } from '../../../../lib/auth';
+import { errorResponse, successResponse } from '../../../../utils/api';
 import { eq, desc, and } from 'drizzle-orm';
 
 const createTaskSchema = z.object({
@@ -25,6 +25,51 @@ const updateTaskSchema = z.object({
   dueDate: z.string().nullable().optional(),
 });
 
+// ---------- Audit helpers ----------
+async function logAudit(
+  locals: App.Locals,
+  params: {
+    workspaceId: string | null;
+    userId: string;
+    entityType: 'task' | 'project' | 'workspace' | 'member' | 'comment';
+    entityId: string;
+    entityName?: string | null;
+    action: 'create' | 'update' | 'delete';
+    changes?: Record<string, { from: any; to: any }> | null;
+  }
+) {
+  if (!params.workspaceId) return;
+  try {
+    const db = getDb(locals);
+    await db.insert(auditLog).values({
+      id: crypto.randomUUID(),
+      workspaceId: params.workspaceId,
+      userId: params.userId,
+      entityType: params.entityType,
+      entityId: params.entityId,
+      entityName: params.entityName ?? null,
+      action: params.action,
+      changes: params.changes ? JSON.stringify(params.changes) : null,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('audit log failed:', err);
+  }
+}
+
+function diffFields(before: any, after: any) {
+  const out: Record<string, { from: any; to: any }> = {};
+  for (const k of Object.keys(after)) {
+    if (k === 'id') continue;
+    if (after[k] === undefined) continue;
+    const b = before?.[k] ?? null;
+    const a = after[k] ?? null;
+    if (b !== a) out[k] = { from: b, to: a };
+  }
+  return out;
+}
+
+// ---------- GET ----------
 export const GET: APIRoute = async ({ request, locals }) => {
   try {
     const auth = await getUserFromRequest(request);
@@ -71,12 +116,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
     });
 
     let filtered = deduplicatedTasks;
-    if (projectId) {
-      filtered = filtered.filter((t) => t.projectId === projectId);
-    }
-    if (status) {
-      filtered = filtered.filter((t) => t.status === status);
-    }
+    if (projectId) filtered = filtered.filter((t) => t.projectId === projectId);
+    if (status) filtered = filtered.filter((t) => t.status === status);
 
     return successResponse({ tasks: filtered });
   } catch (err: any) {
@@ -84,6 +125,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 };
 
+// ---------- POST ----------
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const auth = await getUserFromRequest(request);
@@ -96,7 +138,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const data = result.data;
     const db = getDb(locals);
 
-    // Verify user is a member of the project's workspace
+    // Verify user is a member of the project's workspace, and capture workspaceId
     const project = await db
       .select({ workspaceId: projects.workspaceId })
       .from(projects)
@@ -124,6 +166,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
       updatedAt: now,
     });
 
+    // ✅ Audit: task created
+    await logAudit(locals, {
+      workspaceId: project.workspaceId,
+      userId: auth.userId,
+      entityType: 'task',
+      entityId: id,
+      entityName: data.title,
+      action: 'create',
+    });
+
     return successResponse(
       {
         task: {
@@ -142,6 +194,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 };
 
+// ---------- PATCH ----------
 export const PATCH: APIRoute = async ({ request, locals }) => {
   try {
     const auth = await getUserFromRequest(request);
@@ -155,8 +208,12 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     const db = getDb(locals);
 
     // Verify task belongs to a project in user's workspace
+    // + capture the full row and workspaceId for the audit entry
     const existing = await db
-      .select({ id: tasks.id })
+      .select({
+        task: tasks,
+        workspaceId: projects.workspaceId,
+      })
       .from(tasks)
       .innerJoin(projects, eq(projects.id, tasks.projectId))
       .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
@@ -174,12 +231,28 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
       })
       .where(eq(tasks.id, id));
 
+    // ✅ Audit: task updated (only if there were real changes)
+    const before = existing.task;
+    const changes = diffFields(before, updates);
+    if (Object.keys(changes).length > 0) {
+      await logAudit(locals, {
+        workspaceId: existing.workspaceId,
+        userId: auth.userId,
+        entityType: 'task',
+        entityId: id,
+        entityName: (updates.title ?? before.title) as string,
+        action: 'update',
+        changes,
+      });
+    }
+
     return successResponse({ message: 'Task updated successfully' });
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to update task', 500);
   }
 };
 
+// ---------- DELETE ----------
 export const DELETE: APIRoute = async ({ request, locals }) => {
   try {
     const auth = await getUserFromRequest(request);
@@ -192,8 +265,12 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
     const db = getDb(locals);
 
     // Verify task belongs to a project in user's workspace
+    // + capture the full row and workspaceId for the audit entry
     const existing = await db
-      .select({ id: tasks.id })
+      .select({
+        task: tasks,
+        workspaceId: projects.workspaceId,
+      })
       .from(tasks)
       .innerJoin(projects, eq(projects.id, tasks.projectId))
       .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, projects.workspaceId))
@@ -201,6 +278,16 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
       .get();
 
     if (!existing) return errorResponse('Task not found or access denied', 404);
+
+    // ✅ Audit: task deleted (log before the row disappears)
+    await logAudit(locals, {
+      workspaceId: existing.workspaceId,
+      userId: auth.userId,
+      entityType: 'task',
+      entityId: id,
+      entityName: existing.task.title,
+      action: 'delete',
+    });
 
     await db.delete(tasks).where(eq(tasks.id, id));
     return successResponse({ message: 'Task deleted successfully' });
