@@ -34,6 +34,8 @@ export interface Comment {
   userAvatar?: string;
 }
 
+type QuickFilter = 'all' | 'mine' | 'urgent' | 'high' | 'today' | 'overdue' | 'unassigned';
+
 const COLUMNS: { id: Task['status']; label: string; dotColor: string; badgeBg: string }[] = [
   { id: 'todo', label: 'To Do', dotColor: 'bg-amber-500', badgeBg: 'bg-amber-50 text-amber-700 border-amber-200' },
   { id: 'in_progress', label: 'In Progress', dotColor: 'bg-blue-600', badgeBg: 'bg-blue-50 text-blue-700 border-blue-200' },
@@ -51,6 +53,9 @@ export default function TaskBoard() {
   const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'table'>('kanban');
   const [activeMobileLane, setActiveMobileLane] = useState<Task['status']>('todo');
 
+  // Quick filter chip state
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
+
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -66,6 +71,12 @@ export default function TaskBoard() {
   const [formDueDate, setFormDueDate] = useState('');
   const [formProjectId, setFormProjectId] = useState('');
   const [formAssignedTo, setFormAssignedTo] = useState('');
+
+  // Current user id (from localStorage or fallback)
+  const currentUserId =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('userId') || localStorage.getItem('activeUserId') || ''
+      : '';
 
   const fetchData = async () => {
     try {
@@ -216,13 +227,47 @@ export default function TaskBoard() {
     }
   };
 
+  // ---------- Quick filter helpers ----------
+  const todayISO = new Date().toISOString().slice(0, 10);
+
+  const matchesQuickFilter = (task: Task): boolean => {
+    switch (quickFilter) {
+      case 'mine':
+        return !!currentUserId && task.assignedTo === currentUserId;
+      case 'urgent':
+        return task.priority === 'urgent';
+      case 'high':
+        return task.priority === 'high';
+      case 'today':
+        return task.dueDate === todayISO;
+      case 'overdue':
+        return !!task.dueDate && task.dueDate < todayISO && task.status !== 'done';
+      case 'unassigned':
+        return !task.assignedTo;
+      case 'all':
+      default:
+        return true;
+    }
+  };
+
   const filteredTasks = tasks.filter((task) => {
     const matchesProject = selectedProject === 'all' || task.projectId === selectedProject;
     const matchesSearch =
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesProject && matchesSearch;
+    return matchesProject && matchesSearch && matchesQuickFilter(task);
   });
+
+  // Chip definitions with live counts
+  const quickFilters: { id: QuickFilter; label: string; count: number; tone: string }[] = [
+    { id: 'all', label: 'All', count: tasks.length, tone: 'slate' },
+    { id: 'mine', label: 'My Tasks', count: tasks.filter((t) => !!currentUserId && t.assignedTo === currentUserId).length, tone: 'blue' },
+    { id: 'urgent', label: 'Urgent', count: tasks.filter((t) => t.priority === 'urgent').length, tone: 'rose' },
+    { id: 'high', label: 'High', count: tasks.filter((t) => t.priority === 'high').length, tone: 'amber' },
+    { id: 'today', label: 'Due Today', count: tasks.filter((t) => t.dueDate === todayISO).length, tone: 'indigo' },
+    { id: 'overdue', label: 'Overdue', count: tasks.filter((t) => !!t.dueDate && t.dueDate < todayISO && t.status !== 'done').length, tone: 'red' },
+    { id: 'unassigned', label: 'Unassigned', count: tasks.filter((t) => !t.assignedTo).length, tone: 'slate' },
+  ];
 
   const getPriorityBadge = (priority: Task['priority']) => {
     switch (priority) {
@@ -237,91 +282,131 @@ export default function TaskBoard() {
     }
   };
 
+  const chipClass = (isActive: boolean, tone: string) => {
+    if (isActive) {
+      switch (tone) {
+        case 'blue':   return 'bg-blue-600 text-white border-blue-600 shadow-sm';
+        case 'rose':   return 'bg-rose-600 text-white border-rose-600 shadow-sm';
+        case 'amber':  return 'bg-amber-500 text-white border-amber-500 shadow-sm';
+        case 'indigo': return 'bg-indigo-600 text-white border-indigo-600 shadow-sm';
+        case 'red':    return 'bg-red-600 text-white border-red-600 shadow-sm';
+        case 'slate':
+        default:       return 'bg-slate-800 text-white border-slate-800 shadow-sm';
+      }
+    }
+    return 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Controls Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
-        {/* Row 1 on mobile: View mode switcher & New Task action button */}
-        <div className="flex items-center justify-between gap-2">
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+      <div className="flex flex-col gap-3 bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+          {/* Row 1 on mobile: View mode switcher & New Task action button */}
+          <div className="flex items-center justify-between gap-2">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === 'kanban' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Kanban
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === 'list' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                List
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === 'table' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Table
+              </button>
+            </div>
+
+            {/* Action Button on Mobile */}
             <button
-              onClick={() => setViewMode('kanban')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                viewMode === 'kanban' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              onClick={() => setIsCreateOpen(true)}
+              className="sm:hidden flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
             >
-              Kanban
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                viewMode === 'list' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              List
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                viewMode === 'table' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Table
+              <span>+ New</span>
             </button>
           </div>
 
-          {/* Action Button on Mobile */}
-          <button
-            onClick={() => setIsCreateOpen(true)}
-            className="sm:hidden flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
-          >
-            <span>+ New</span>
-          </button>
+          {/* Row 2 on mobile: Project Filter & Search input; Inline on desktop */}
+          <div className="flex items-center gap-2 flex-1 sm:justify-end">
+            {/* Project Filter */}
+            <select
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+              className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 sm:px-3 py-2 focus:outline-none focus:border-blue-600 flex-1 sm:flex-none max-w-[170px] sm:max-w-[200px] truncate"
+            >
+              <option value="all">All Projects ({tasks.length})</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  📁 {p.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Search */}
+            <div className="relative flex-1 sm:w-48 sm:flex-none">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tasks..."
+                className="bg-slate-50 text-xs text-slate-800 border border-slate-200 rounded-xl pl-3 pr-7 py-2 focus:outline-none focus:border-blue-600 w-full font-medium"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Action Button on Desktop */}
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="hidden sm:flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
+            >
+              <span>+ New Task</span>
+            </button>
+          </div>
         </div>
 
-        {/* Row 2 on mobile: Project Filter & Search input; Inline on desktop */}
-        <div className="flex items-center gap-2 flex-1 sm:justify-end">
-          {/* Project Filter */}
-          <select
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-            className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 sm:px-3 py-2 focus:outline-none focus:border-blue-600 flex-1 sm:flex-none max-w-[170px] sm:max-w-[200px] truncate"
-          >
-            <option value="all">All Projects ({tasks.length})</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                📁 {p.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Search */}
-          <div className="relative flex-1 sm:w-48 sm:flex-none">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks..."
-              className="bg-slate-50 text-xs text-slate-800 border border-slate-200 rounded-xl pl-3 pr-7 py-2 focus:outline-none focus:border-blue-600 w-full font-medium"
-            />
-            {searchQuery && (
+        {/* Quick Filter Chips Row */}
+        <div className="flex items-center gap-1.5 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 pb-0.5 scrollbar-thin">
+          {quickFilters.map((chip) => {
+            const isActive = quickFilter === chip.id;
+            return (
               <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                key={chip.id}
+                onClick={() => setQuickFilter(chip.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${chipClass(isActive, chip.tone)}`}
               >
-                ✕
+                <span>{chip.label}</span>
+                <span
+                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                    isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {chip.count}
+                </span>
               </button>
-            )}
-          </div>
-
-          {/* Action Button on Desktop */}
-          <button
-            onClick={() => setIsCreateOpen(true)}
-            className="hidden sm:flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
-          >
-            <span>+ New Task</span>
-          </button>
+            );
+          })}
         </div>
       </div>
 
@@ -362,7 +447,7 @@ export default function TaskBoard() {
                 })}
               </div>
 
-              {/* Columns Container: Active lane on mobile, full 4 columns grid on desktop */}
+              {/* Columns Container */}
               <DragDropContext onDragEnd={onDragEnd}>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
                   {COLUMNS.map((column) => {
@@ -806,6 +891,7 @@ export default function TaskBoard() {
                   >
                     Send
                   </button>
+                </button>
                 </form>
               </div>
             </div>
