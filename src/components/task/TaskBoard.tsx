@@ -53,7 +53,7 @@ export default function TaskBoard() {
   const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'table'>('kanban');
   const [activeMobileLane, setActiveMobileLane] = useState<Task['status']>('todo');
 
-  // Quick filter chip state
+  // ✅ NEW: Quick filter chip state
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
 
   // Modals state
@@ -72,7 +72,7 @@ export default function TaskBoard() {
   const [formProjectId, setFormProjectId] = useState('');
   const [formAssignedTo, setFormAssignedTo] = useState('');
 
-  // Current user id (from localStorage or fallback)
+  // Current user id (from localStorage)
   const currentUserId =
     typeof window !== 'undefined'
       ? localStorage.getItem('userId') || localStorage.getItem('activeUserId') || ''
@@ -300,11 +300,11 @@ export default function TaskBoard() {
   return (
     <div className="space-y-6">
       {/* Top Controls Toolbar */}
-      <div className="flex flex-col gap-3 bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+      <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+        {/* Row: View mode + Project + Search + New Task */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
-          {/* Row 1 on mobile: View mode switcher & New Task action button */}
+          {/* View Mode Toggle + Mobile New button */}
           <div className="flex items-center justify-between gap-2">
-            {/* View Mode Toggle */}
             <div className="flex items-center bg-slate-100 p-1 rounded-xl">
               <button
                 onClick={() => setViewMode('kanban')}
@@ -332,7 +332,6 @@ export default function TaskBoard() {
               </button>
             </div>
 
-            {/* Action Button on Mobile */}
             <button
               onClick={() => setIsCreateOpen(true)}
               className="sm:hidden flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
@@ -341,9 +340,8 @@ export default function TaskBoard() {
             </button>
           </div>
 
-          {/* Row 2 on mobile: Project Filter & Search input; Inline on desktop */}
+          {/* Project + Search + Desktop New button */}
           <div className="flex items-center gap-2 flex-1 sm:justify-end">
-            {/* Project Filter */}
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
@@ -357,7 +355,6 @@ export default function TaskBoard() {
               ))}
             </select>
 
-            {/* Search */}
             <div className="relative flex-1 sm:w-48 sm:flex-none">
               <input
                 type="text"
@@ -376,7 +373,6 @@ export default function TaskBoard() {
               )}
             </div>
 
-            {/* Action Button on Desktop */}
             <button
               onClick={() => setIsCreateOpen(true)}
               className="hidden sm:flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
@@ -386,8 +382,8 @@ export default function TaskBoard() {
           </div>
         </div>
 
-        {/* Quick Filter Chips Row */}
-        <div className="flex items-center gap-1.5 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 pb-0.5 scrollbar-thin">
+        {/* ✅ NEW ROW: Quick Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-100">
           {quickFilters.map((chip) => {
             const isActive = quickFilter === chip.id;
             return (
@@ -420,7 +416,7 @@ export default function TaskBoard() {
           {/* VIEW 1: KANBAN BOARD */}
           {viewMode === 'kanban' && (
             <div className="space-y-4 w-full">
-              {/* Mobile Lane Tabs (Full width segmented control) */}
+              {/* Mobile Lane Tabs */}
               <div className="md:hidden grid grid-cols-4 gap-1 p-1 bg-slate-200/70 rounded-2xl w-full">
                 {COLUMNS.map((col) => {
                   const count = filteredTasks.filter((t) => t.status === col.id).length;
@@ -459,7 +455,6 @@ export default function TaskBoard() {
                         key={column.id}
                         className={`${isVisibleOnMobile ? 'flex' : 'hidden md:flex'} flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[480px] w-full`}
                       >
-                        {/* Column Header */}
                         <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
                           <div className="flex items-center gap-2">
                             <span className={`w-2.5 h-2.5 rounded-full ${column.dotColor}`}></span>
@@ -470,7 +465,6 @@ export default function TaskBoard() {
                           </span>
                         </div>
 
-                        {/* Droppable Lane */}
                         <Droppable droppableId={column.id}>
                           {(provided, snapshot) => (
                             <div
@@ -526,7 +520,6 @@ export default function TaskBoard() {
                                           </p>
                                         )}
 
-                                        {/* Card Footer */}
                                         <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
                                           <div>
                                             {task.dueDate ? (
@@ -785,8 +778,7 @@ export default function TaskBoard() {
                   onClick={() => setIsCreateOpen(false)}
                   className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800"
                 >
-                  Cancel
-                </button>
+                  Cancel                </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/30"
@@ -891,7 +883,6 @@ export default function TaskBoard() {
                   >
                     Send
                   </button>
-                </button>
                 </form>
               </div>
             </div>
