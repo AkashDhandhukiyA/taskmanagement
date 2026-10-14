@@ -191,10 +191,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
     });
   } catch (err: any) {
     console.error('Google callback error:', err);
+    const displayMsg =
+      err?.cause?.message ||
+      (err?.message?.startsWith('Failed query:') ? 'Database schema out of date. Please apply remote migrations.' : err?.message) ||
+      'Authentication error';
     return new Response(null, {
       status: 302,
       headers: {
-        Location: `/login?error=${encodeURIComponent(err.message || 'Authentication error')}`,
+        Location: `/login?error=${encodeURIComponent(displayMsg)}`,
       },
     });
   }

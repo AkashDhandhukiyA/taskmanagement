@@ -63,7 +63,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
       Object.fromEntries(headers.entries())
     );
   } catch (err: any) {
-    return errorResponse(err.message || 'Registration failed', 500);
+    console.error('Registration error:', err);
+    const causeMsg = err?.cause?.message || err?.cause?.toString() || '';
+    if (causeMsg.includes('UNIQUE constraint') || causeMsg.includes('users.email')) {
+      return errorResponse('An account with this email already exists', 409);
+    }
+    if (causeMsg.includes('has no column') || causeMsg.includes('no such column')) {
+      return errorResponse('Database schema is out of date. Please run remote migrations (npx wrangler d1 migrations apply task-management-db --remote).', 500);
+    }
+    const displayMsg = err?.cause?.message || (err?.message?.startsWith('Failed query:') ? 'Database operation failed. Ensure all database migrations have been applied.' : err?.message) || 'Registration failed';
+    return errorResponse(displayMsg, 500);
   }
 };
 

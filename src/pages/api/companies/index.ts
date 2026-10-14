@@ -156,7 +156,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       201
     );
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to create company', 500);
+    console.error('Create company error:', err);
+    const causeMsg = err?.cause?.message || err?.cause?.toString() || '';
+    if (causeMsg.includes('no such table') || causeMsg.includes('has no column')) {
+      return errorResponse('Database tables are missing or out of date. Please run remote migrations (npx wrangler d1 migrations apply task-management-db --remote).', 500);
+    }
+    const displayMsg = err?.cause?.message || (err?.message?.startsWith('Failed query:') ? 'Database operation failed. Ensure all migrations are applied.' : err?.message) || 'Failed to create company';
+    return errorResponse(displayMsg, 500);
   }
 };
 
