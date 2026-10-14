@@ -54,12 +54,35 @@ export const comments = sqliteTable('comments', {
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// ============ NEW: Audit Log ============
+export const auditLog = sqliteTable('audit_log', {
+  id: text('id').primaryKey(),
+  workspaceId: text('workspace_id')
+    .notNull()
+    .references(() => workspaces.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  // Category of change: 'task' | 'project' | 'workspace' | 'member' | 'comment'
+  entityType: text('entity_type').notNull(),
+  // ID of the row that changed (e.g. task id, project id)
+  entityId: text('entity_id').notNull(),
+  // Human-friendly name at time of change (e.g. task title)
+  entityName: text('entity_name'),
+  // 'create' | 'update' | 'delete'
+  action: text('action').notNull(),
+  // JSON string with before/after values for updates
+  changes: text('changes'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   ownedWorkspaces: many(workspaces),
   workspaceMemberships: many(workspaceMembers),
   assignedTasks: many(tasks),
   comments: many(comments),
+  auditEntries: many(auditLog),
 }));
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
@@ -69,6 +92,7 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   }),
   members: many(workspaceMembers),
   projects: many(projects),
+  auditEntries: many(auditLog),
 }));
 
 export const workspaceMembersRelations = relations(workspaceMembers, ({ one }) => ({
@@ -109,6 +133,17 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   }),
   user: one(users, {
     fields: [comments.userId],
+    references: [users.id],
+  }),
+}));
+
+export const auditLogRelations = relations(auditLog, ({ one }) => ({
+  workspace: one(workspaces, {
+    fields: [auditLog.workspaceId],
+    references: [workspaces.id],
+  }),
+  user: one(users, {
+    fields: [auditLog.userId],
     references: [users.id],
   }),
 }));
