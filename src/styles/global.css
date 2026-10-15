@@ -13,26 +13,57 @@
     --card: #ffffff;
     --border: #e2e8f0;
   }
-html, body {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  min-height: 100%;
-}
 
-/* Ensure all main containers fill the parent width at any zoom level */
-main, section, article {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
+  /* ============================================
+     FULL-WIDTH + ZOOM-PROOF RULES
+     ============================================ */
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    min-height: 100%;
+  }
 
-/* Prevent 100vw overflow (scrollbars) */
-*, *::before, *::after {
-  box-sizing: border-box;
-}
+  main {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0;
+    display: block;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Kill any centered wrapper inside main (nuclear option) */
+  main > * {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  main > * > * {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  main [class*="max-w-"] {
+    max-width: none !important;
+  }
+
+  main [class*="mx-auto"] {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   html.dark {
     --background: #0b1120;
     --foreground: #f8fafc;
@@ -147,7 +178,6 @@ a.bg-blue-600 {
   border-color: var(--accent-color, #2563eb) !important;
 }
 
-/* Active navigation item */
 a[class*="bg-blue-50"] {
   background-color: var(--accent-light, #eff6ff) !important;
   color: var(--accent-color, #2563eb) !important;
