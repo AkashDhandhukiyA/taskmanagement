@@ -138,7 +138,6 @@ export default function TaskBoard() {
   useEffect(() => {
     fetchData();
 
-    // Initialize user preferences
     try {
       const savedPrefs = localStorage.getItem('taskflow_preferences');
       if (savedPrefs) {
@@ -156,7 +155,6 @@ export default function TaskBoard() {
     window.addEventListener('companyChanged', handleComp);
     window.addEventListener('workspaceChanged', handleComp);
 
-    // Keyboard Shortcuts (n: new task, Escape: close modal)
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
@@ -347,7 +345,6 @@ export default function TaskBoard() {
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    // Auto-archive check
     let autoArchiveMatch = true;
     try {
       const savedPrefs = localStorage.getItem('taskflow_preferences');
@@ -402,8 +399,6 @@ export default function TaskBoard() {
     return 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
   };
 
-  // ---------- Reusable styled inline selectors ----------
-
   const PrioritySelect = ({
     value,
     onChange,
@@ -445,7 +440,6 @@ export default function TaskBoard() {
     );
   };
 
-  // ✅ FIXED — clean pill, no overlay that overflows
   const ProjectSelect = ({
     value,
     onChange,
@@ -599,11 +593,12 @@ export default function TaskBoard() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Top Controls Toolbar */}
-      <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
-          <div className="flex items-center justify-between gap-2">
+    <div className="space-y-6 w-full max-w-full">
+      {/* Top Controls Toolbar — single row, full width */}
+      <div className="w-full bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
+          {/* Left group: View toggle + New (mobile) */}
+          <div className="flex items-center justify-between gap-2 shrink-0">
             <div className="flex items-center bg-slate-100 p-1 rounded-xl">
               <button
                 onClick={() => setViewMode('kanban')}
@@ -633,17 +628,18 @@ export default function TaskBoard() {
 
             <button
               onClick={openCreateModal}
-              className="sm:hidden flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
+              className="lg:hidden flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
             >
               <span>+ New</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-2 flex-1 sm:justify-end">
+          {/* Middle group: Project dropdown + Quick filter chips (scrolls horizontally) */}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 sm:px-3 py-2 focus:outline-none focus:border-blue-600 flex-1 sm:flex-none max-w-[170px] sm:max-w-[200px] truncate"
+              className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:border-blue-600 shrink-0 max-w-[160px] truncate"
             >
               <option value="all">All Projects ({tasks.length})</option>
               {projects.map((p) => (
@@ -653,7 +649,35 @@ export default function TaskBoard() {
               ))}
             </select>
 
-            <div className="relative flex-1 sm:w-48 sm:flex-none">
+            <div
+              className="flex items-center gap-1.5 overflow-x-auto pb-0.5 flex-1 min-w-0"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              {quickFilters.map((chip) => {
+                const isActive = quickFilter === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    onClick={() => setQuickFilter(chip.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${chipClass(isActive, chip.tone)}`}
+                  >
+                    <span>{chip.label}</span>
+                    <span
+                      className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                        isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      {chip.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right group: Search + New (desktop) */}
+          <div className="flex items-center gap-2 shrink-0 lg:justify-end">
+            <div className="relative flex-1 lg:w-56 lg:flex-none">
               <input
                 type="text"
                 value={searchQuery}
@@ -673,39 +697,10 @@ export default function TaskBoard() {
 
             <button
               onClick={openCreateModal}
-              className="hidden sm:flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
+              className="hidden lg:flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
             >
               <span>+ New Task</span>
             </button>
-          </div>
-        </div>
-
-        {/* Quick Filters */}
-        <div className="pt-2 border-t border-slate-100 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Quick Filters</span>
-            <div className="flex-1 h-px bg-slate-100"></div>
-          </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'thin' }}>
-            {quickFilters.map((chip) => {
-              const isActive = quickFilter === chip.id;
-              return (
-                <button
-                  key={chip.id}
-                  onClick={() => setQuickFilter(chip.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${chipClass(isActive, chip.tone)}`}
-                >
-                  <span>{chip.label}</span>
-                  <span
-                    className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
-                      isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    {chip.count}
-                  </span>
-                </button>
-              );
-            })}
           </div>
         </div>
       </div>
@@ -862,7 +857,7 @@ export default function TaskBoard() {
 
           {/* LIST */}
           {viewMode === 'list' && (
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-2xs">
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-2xs w-full">
               {filteredTasks.length === 0 ? (
                 <div className="p-8 text-center text-xs text-slate-400 font-medium">No tasks found</div>
               ) : (
@@ -918,7 +913,7 @@ export default function TaskBoard() {
 
           {/* TABLE */}
           {viewMode === 'table' && (
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-2xs -mx-2 sm:mx-0">
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-2xs w-full">
               <table className="w-full min-w-[720px] text-left text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
                   <tr>
