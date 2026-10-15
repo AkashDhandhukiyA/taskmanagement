@@ -13,7 +13,26 @@
     --card: #ffffff;
     --border: #e2e8f0;
   }
+html, body {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  min-height: 100%;
+}
 
+/* Ensure all main containers fill the parent width at any zoom level */
+main, section, article {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Prevent 100vw overflow (scrollbars) */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
   html.dark {
     --background: #0b1120;
     --foreground: #f8fafc;
