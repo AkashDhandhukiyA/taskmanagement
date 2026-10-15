@@ -15,7 +15,7 @@
   }
 
   /* ============================================
-     FULL-WIDTH LAYOUT RULES (safe — modals keep size)
+     FULL-WIDTH LAYOUT (safe version)
      ============================================ */
   html, body {
     width: 100%;
@@ -36,8 +36,8 @@
     margin: 0;
   }
 
-  /* Neutralize capped wrappers only on the FIRST TWO levels inside <main>.
-     Deeply nested elements (modals, drawers, dropdowns, cards) keep their own sizing. */
+  /* Only strip max-width on the FIRST TWO levels inside <main>,
+     so page wrappers go full width but modals/cards keep their size. */
   main > div,
   main > section,
   main > article {
@@ -199,17 +199,9 @@ html.dark a[class*="bg-blue-50"] {
 
 /* ========================================================
    MODAL / DIALOG PROTECTION
-   Prevent full-width global rules from stretching modals
+   Restore real Tailwind max-w-* inside fixed-position overlays,
+   so the Create Task dialog stays small and centered.
    ======================================================== */
-.fixed.inset-0 > .bg-white.max-w-md,
-.fixed.inset-0 > .bg-white.max-w-lg,
-.fixed.inset-0 > .bg-white.max-w-xl,
-.fixed.inset-0 > .bg-white.max-w-2xl {
-  width: 100%;
-  max-width: var(--modal-max-width, 28rem);
-}
-
-/* Restore the real Tailwind max-w-* values inside modals */
 .fixed.inset-0 [class*="max-w-md"] {
   max-width: 28rem !important;
 }
@@ -227,6 +219,22 @@ html.dark a[class*="bg-blue-50"] {
 }
 .fixed.inset-0 [class*="max-w-4xl"] {
   max-width: 56rem !important;
+}
+
+/* Ensure the modal card keeps its own width even if a global rule tries
+   to force width: 100% on it. This targets the classic Tailwind pattern:
+   <div class="fixed inset-0 ... flex items-center justify-center">
+     <div class="bg-white ... max-w-md">   ← protected here
+*/
+.fixed.inset-0 > .bg-white {
+  width: auto;
+  max-width: 28rem;
+}
+
+@media (min-width: 640px) {
+  .fixed.inset-0 > .bg-white {
+    max-width: 28rem;
+  }
 }
 
 /* ========================================================
