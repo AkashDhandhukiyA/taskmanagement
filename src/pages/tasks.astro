@@ -1,0 +1,48 @@
+---
+import Layout from '../layouts/Layout.astro';
+import TaskBoard from '../components/TaskBoard';
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect('/login');
+}
+---
+
+<Layout title="Tasks & Kanban - TaskFlow" activePath="/tasks">
+  <div class="tasks-full-bleed">
+    <TaskBoard client:load />
+  </div>
+</Layout>
+
+<style>
+  /*
+    Full-bleed wrapper that guarantees 100% width on every device and
+    every browser zoom level. Works even when <main> or an ancestor has
+    stray max-width / mx-auto / padding.
+  */
+  .tasks-full-bleed {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    display: block;
+    /* Prevent any ancestor's overflow-x-hidden from clipping content */
+    overflow: visible;
+  }
+
+  /* Cancel any incidental padding on <main> that would shrink the viewport */
+  .tasks-full-bleed + * { display: none; }
+
+  /* Ensure the wrapper's own grid children can shrink below content size */
+  .tasks-full-bleed > * {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+
+  @media (min-width: 768px) {
+    .tasks-full-bleed {
+      padding: 0;
+    }
+  }
+</style>
