@@ -49,7 +49,7 @@ const user: any = rawUser;
   </head>
   <body class="bg-[#f8faff] text-slate-900 min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif] overflow-x-hidden">
     {user ? (
-      <div class="flex min-h-screen min-w-0 max-w-full">
+      <div class="flex min-h-screen min-w-0 w-full">
         {/* ============ DESKTOP SIDEBAR (md and up) ============ */}
         <aside class="hidden md:flex w-60 lg:w-64 xl:w-72 bg-white border-r border-slate-200/80 flex-col fixed inset-y-0 z-30 shadow-xs">
           {/* Logo + Company Switcher */}
@@ -217,7 +217,7 @@ const user: any = rawUser;
         </aside>
 
         {/* ============ MAIN BODY ============ */}
-        <div class="flex-1 md:ml-60 lg:ml-64 xl:ml-72 flex flex-col min-h-screen min-w-0 max-w-full overflow-x-hidden">
+        <div class="flex-1 md:ml-60 lg:ml-64 xl:ml-72 flex flex-col min-h-screen w-full min-w-0">
           {/* Top Navbar */}
           <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-20 flex items-center justify-between gap-2 px-3 sm:px-4 md:px-6 lg:px-8">
             {/* Mobile / Tablet — Company switcher */}
@@ -283,12 +283,12 @@ const user: any = rawUser;
             </div>
           </header>
 
-          {/* Page content */}
-          <main class="flex-1 pb-28 md:pb-6 lg:pb-8 min-w-0 max-w-full overflow-x-hidden">
+          {/* Page content — full width, no caps */}
+          <main class="flex-1 pb-28 md:pb-6 lg:pb-8 w-full min-w-0">
             <slot />
           </main>
 
-          {/* ============ MOBILE BOTTOM NAV (phones + small tablets) ============ */}
+          {/* ============ MOBILE BOTTOM NAV ============ */}
           <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-lg border-t border-slate-200/90 flex items-center justify-around px-1 sm:px-2 py-2 shadow-lg shadow-slate-900/5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
             <a
               href="/dashboard"
@@ -356,7 +356,7 @@ const user: any = rawUser;
       </div>
     ) : (
       /* ============ GUEST LAYOUT ============ */
-      <div class="min-h-screen flex flex-col bg-[#f8faff]">
+      <div class="min-h-screen flex flex-col bg-[#f8faff] w-full">
         <header class="h-16 border-b border-slate-100 bg-white/90 backdrop-blur-md px-4 sm:px-6 md:px-12 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
           <a href="/" class="flex items-center gap-2.5">
             <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shadow-blue-500/30">
@@ -371,7 +371,7 @@ const user: any = rawUser;
           </div>
         </header>
 
-        <main class="flex-1">
+        <main class="flex-1 w-full min-w-0">
           <slot />
         </main>
       </div>
@@ -540,7 +540,6 @@ const user: any = rawUser;
               renderList(list);
               renderList(mobileList);
 
-              // If logged-in user has 0 companies, redirect them to create one (unless already on create page)
               if (window.location.pathname !== '/company/create' && !window.location.pathname.startsWith('/api/')) {
                 window.location.href = '/company/create';
               }
@@ -564,4 +563,3 @@ const user: any = rawUser;
     </script>
   </body>
 </html>
-
