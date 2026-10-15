@@ -14,6 +14,51 @@
     --border: #e2e8f0;
   }
 
+  /* ============================================
+     FULL-WIDTH LAYOUT (safe version)
+     ============================================ */
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    min-height: 100%;
+  }
+
+  main {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    display: block;
+    padding-left: 0;
+    padding-right: 0;
+    margin: 0;
+  }
+
+  /* Only strip max-width on the FIRST TWO levels inside <main>,
+     so page wrappers go full width but modals/cards keep their size. */
+  main > div,
+  main > section,
+  main > article {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  main > div > div,
+  main > div > section,
+  main > div > article {
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   html.dark {
     --background: #0b1120;
     --foreground: #f8fafc;
@@ -128,7 +173,6 @@ a.bg-blue-600 {
   border-color: var(--accent-color, #2563eb) !important;
 }
 
-/* Active navigation item */
 a[class*="bg-blue-50"] {
   background-color: var(--accent-light, #eff6ff) !important;
   color: var(--accent-color, #2563eb) !important;
@@ -153,7 +197,49 @@ html.dark a[class*="bg-blue-50"] {
   padding: 1.75rem !important;
 }
 
-/* Custom crisp scrollbars */
+/* ========================================================
+   MODAL / DIALOG PROTECTION
+   Restore real Tailwind max-w-* inside fixed-position overlays,
+   so the Create Task dialog stays small and centered.
+   ======================================================== */
+.fixed.inset-0 [class*="max-w-md"] {
+  max-width: 28rem !important;
+}
+.fixed.inset-0 [class*="max-w-lg"] {
+  max-width: 32rem !important;
+}
+.fixed.inset-0 [class*="max-w-xl"] {
+  max-width: 36rem !important;
+}
+.fixed.inset-0 [class*="max-w-2xl"] {
+  max-width: 42rem !important;
+}
+.fixed.inset-0 [class*="max-w-3xl"] {
+  max-width: 48rem !important;
+}
+.fixed.inset-0 [class*="max-w-4xl"] {
+  max-width: 56rem !important;
+}
+
+/* Ensure the modal card keeps its own width even if a global rule tries
+   to force width: 100% on it. This targets the classic Tailwind pattern:
+   <div class="fixed inset-0 ... flex items-center justify-center">
+     <div class="bg-white ... max-w-md">   ← protected here
+*/
+.fixed.inset-0 > .bg-white {
+  width: auto;
+  max-width: 28rem;
+}
+
+@media (min-width: 640px) {
+  .fixed.inset-0 > .bg-white {
+    max-width: 28rem;
+  }
+}
+
+/* ========================================================
+   SCROLLBARS
+   ======================================================== */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
