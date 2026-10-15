@@ -495,7 +495,7 @@ export default function DashboardManager({ user }: DashboardProps) {
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-purple-600/10 via-transparent to-transparent rounded-full blur-2xl pointer-events-none"></div>
 
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative z-10">
-          <div className="space-y-3 min-w-0 max-w-2xl">
+          <div className="space-y-3 min-w-0 flex-1">
             {/* Top row: Date pill + Company badge */}
             <div className="flex items-center gap-2.5 flex-wrap">
               {/* Date chip */}

@@ -151,8 +151,8 @@ export default function WorkspaceManager() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <div className="space-y-6 w-full max-w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full">
         {/* Workspace List */}
         <div className="lg:col-span-1 p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-4">
           <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider">Your Workspaces</h3>
@@ -232,7 +232,7 @@ export default function WorkspaceManager() {
         </div>
 
         {/* Members */}
-        <div className="lg:col-span-2 p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-4">
+        <div className="lg:col-span-2 xl:col-span-3 p-5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider">Team Members ({members.length})</h3>

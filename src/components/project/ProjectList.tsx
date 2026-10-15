@@ -105,8 +105,8 @@ export default function ProjectList() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+    <div className="space-y-6 w-full max-w-full">
+      <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs w-full">
         <div>
           <h2 className="text-sm font-black text-slate-900">All Workspace Projects</h2>
           <p className="text-[11px] text-slate-400 font-medium">Track completion pace and team deadlines</p>
@@ -119,7 +119,7 @@ export default function ProjectList() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 w-full">
         {projects.map((proj) => {
           const projTasks = tasks.filter((t) => t.projectId === proj.id);
           const completed = projTasks.filter((t) => t.status === 'done');

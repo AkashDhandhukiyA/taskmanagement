@@ -8,38 +8,53 @@ if (!user) {
 ---
 
 <Layout title="Create Your Company - Acme Corp" activePath="/company/create">
-  <div class="min-h-[85vh] flex items-center justify-center p-4 sm:p-6 md:p-8">
-    <div class="w-full max-w-2xl bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-2xl shadow-blue-500/5 relative">
-      {/* Step Badge */}
-      <div class="flex items-center gap-2 mb-4">
-        <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-[10px] font-extrabold uppercase tracking-wider border border-blue-200">
-          Step 2 of 2 • Company Setup
-        </span>
-      </div>
-
-      <div class="mb-6">
-        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Set up your company</h1>
-        <p class="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
-          Create your company organization. All team members, projects, and task sprints will be organized inside this company.
-        </p>
+  <div class="space-y-6 w-full max-w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 min-w-0">
+    <div class="w-full max-w-full bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 md:p-10 shadow-xl shadow-slate-900/5 relative">
+      {/* Step Badge & Header */}
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 pb-5 border-b border-slate-100">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-[10px] font-extrabold uppercase tracking-wider border border-blue-200">
+              Step 2 of 2 • Company Setup
+            </span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Set up your company</h1>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
+            Create your company organization. All team members, projects, and task sprints will be organized inside this company.
+          </p>
+        </div>
       </div>
 
       <!-- Error Alert -->
-      <div id="errorAlert" class="hidden mb-5 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold"></div>
+      <div id="errorAlert" class="hidden mb-6 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold"></div>
 
-      <form id="createCompanyForm" class="space-y-5">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">Company Name *</label>
-          <input
-            type="text"
-            id="companyName"
-            required
-            placeholder="e.g. Acme Innovations, NextGen Software, DesignCraft"
-            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
-          />
-        </div>
+      <form id="createCompanyForm" class="space-y-6 w-full">
+        {/* Main Form Fields Grid */}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Company Name */}
+          <div class="md:col-span-2 lg:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Company Name *</label>
+            <input
+              type="text"
+              id="companyName"
+              required
+              placeholder="e.g. Acme Innovations, NextGen Software, DesignCraft"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
+            />
+          </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Website */}
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Website (Optional)</label>
+            <input
+              type="url"
+              id="companyWebsite"
+              placeholder="https://yourcompany.com"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
+            />
+          </div>
+
+          {/* Company Timezone */}
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1.5">Company Timezone *</label>
             <select
@@ -65,9 +80,10 @@ if (!user) {
               <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
               <option value="Pacific/Auckland">Pacific/Auckland (NZST)</option>
             </select>
-            <p class="text-[10px] text-slate-400 mt-1">Used for sprint dead-lines and scheduling</p>
+            <p class="text-[10px] text-slate-400 mt-1">Used for sprint deadlines and scheduling</p>
           </div>
 
+          {/* Industry */}
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1.5">Industry</label>
             <select
@@ -84,10 +100,10 @@ if (!user) {
               <option value="Consulting & Professional Services">Consulting & Professional Services</option>
               <option value="Other">Other</option>
             </select>
+            <p class="text-[10px] text-slate-400 mt-1">Categorizes your organization</p>
           </div>
-        </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Company Size */}
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1.5">Company Size</label>
             <select
@@ -100,9 +116,11 @@ if (!user) {
               <option value="201-500">201-500 employees (Mid-market)</option>
               <option value="500+">500+ employees (Enterprise)</option>
             </select>
+            <p class="text-[10px] text-slate-400 mt-1">Scales team capacity metrics</p>
           </div>
 
-          <div>
+          {/* Your Role in Company */}
+          <div class="md:col-span-1">
             <label class="block text-xs font-bold text-slate-700 mb-1.5">Your Role in Company</label>
             <input
               type="text"
@@ -110,45 +128,39 @@ if (!user) {
               placeholder="e.g. Founder & CEO, Product Lead"
               class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
             />
+            <p class="text-[10px] text-slate-400 mt-1">Your title within this organization</p>
+          </div>
+
+          {/* Live Preview Card */}
+          <div class="md:col-span-1 lg:col-span-2 p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 via-indigo-50/60 to-purple-50/50 border border-blue-100 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div id="previewAvatar" class="w-11 h-11 rounded-xl bg-blue-600 text-white font-black text-base flex items-center justify-center shadow-md shadow-blue-500/20">
+                C
+              </div>
+              <div>
+                <p id="previewName" class="text-xs sm:text-sm font-bold text-slate-900">Your Company Name</p>
+                <p id="previewTz" class="text-[10px] text-slate-500 font-mono mt-0.5">🌐 UTC</p>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-extrabold uppercase shrink-0">
+              Owner: {user.name}
+            </span>
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">Website (Optional)</label>
-          <input
-            type="url"
-            id="companyWebsite"
-            placeholder="https://yourcompany.com"
-            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
-          />
+        {/* Submit Action */}
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end">
+          <button
+            type="submit"
+            id="submitBtn"
+            class="w-full sm:w-auto min-w-[280px] py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-blue-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <span>Complete Setup & Enter Dashboard</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </button>
         </div>
-
-        {/* Live Preview Card */}
-        <div class="p-4 rounded-2xl bg-gradient-to-r from-blue-50/60 to-indigo-50/60 border border-blue-100 flex items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <div id="previewAvatar" class="w-10 h-10 rounded-xl bg-blue-600 text-white font-black text-sm flex items-center justify-center shadow-sm">
-              C
-            </div>
-            <div>
-              <p id="previewName" class="text-xs font-bold text-slate-900">Your Company Name</p>
-              <p id="previewTz" class="text-[10px] text-slate-500 font-mono mt-0.5">🌐 UTC</p>
-            </div>
-          </div>
-          <span class="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-extrabold uppercase">
-            Owner: {user.name}
-          </span>
-        </div>
-
-        <button
-          type="submit"
-          id="submitBtn"
-          class="w-full py-3 px-5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-blue-600/30 transition-all cursor-pointer flex items-center justify-center gap-2 mt-4"
-        >
-          <span>Complete Setup & Enter Dashboard</span>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </button>
       </form>
     </div>
   </div>
