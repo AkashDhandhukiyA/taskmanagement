@@ -188,7 +188,6 @@ export default function TaskBoard() {
     };
   }, []);
 
-  // Close filter menu on outside click
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
       if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) {
@@ -400,21 +399,6 @@ export default function TaskBoard() {
     }
   };
 
-  const chipClass = (isActive: boolean, tone: string) => {
-    if (isActive) {
-      switch (tone) {
-        case 'blue':   return 'bg-blue-600 text-white border-blue-600 shadow-sm';
-        case 'rose':   return 'bg-rose-600 text-white border-rose-600 shadow-sm';
-        case 'amber':  return 'bg-amber-500 text-white border-amber-500 shadow-sm';
-        case 'indigo': return 'bg-indigo-600 text-white border-indigo-600 shadow-sm';
-        case 'red':    return 'bg-red-600 text-white border-red-600 shadow-sm';
-        case 'slate':
-        default:       return 'bg-slate-800 text-white border-slate-800 shadow-sm';
-      }
-    }
-    return 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
-  };
-
   const PrioritySelect = ({
     value,
     onChange,
@@ -609,12 +593,33 @@ export default function TaskBoard() {
   };
 
   return (
-    <div className="w-screen max-w-full space-y-6 pl-4 pr-4 sm:pl-6 sm:pr-6 lg:pl-8 lg:pr-8">
-      {/* Top Controls Toolbar — single row, 100% width */}
-      <div className="w-full bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+    <div className="w-full space-y-5 p-3 sm:p-4 lg:p-5">
+      {/* Top Controls Toolbar — includes heading + full controls, 100% width */}
+      <div className="w-full bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+        {/* Row 1: Heading + View toggle + Actions */}
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-          {/* Left: View toggle */}
-          <div className="flex items-center justify-between gap-2 shrink-0">
+          {/* Heading block */}
+          <div className="flex items-center justify-between gap-2 lg:shrink-0">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight">
+                Tasks & Kanban
+              </h1>
+              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                {filteredTasks.length} task{filteredTasks.length === 1 ? '' : 's'} shown
+              </p>
+            </div>
+
+            {/* Mobile + New button */}
+            <button
+              onClick={openCreateModal}
+              className="lg:hidden flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
+            >
+              <span>+ New</span>
+            </button>
+          </div>
+
+          {/* View toggle — stays on row 1 on desktop, wraps below on mobile */}
+          <div className="flex items-center gap-2 lg:shrink-0">
             <div className="flex items-center bg-slate-100 p-1 rounded-xl">
               <button
                 onClick={() => setViewMode('kanban')}
@@ -641,120 +646,10 @@ export default function TaskBoard() {
                 Table
               </button>
             </div>
-
-            <button
-              onClick={openCreateModal}
-              className="lg:hidden flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
-            >
-              <span>+ New</span>
-            </button>
-          </div>
-
-          {/* Middle: Project dropdown + Quick filter dropdown */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {/* Project dropdown */}
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-600 shrink-0 max-w-[180px] truncate cursor-pointer"
-            >
-              <option value="all">All Projects ({tasks.length})</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  📁 {p.name}
-                </option>
-              ))}
-            </select>
-
-            {/* Single Quick Filter dropdown */}
-            <div className="relative shrink-0" ref={filterMenuRef}>
-              <button
-                type="button"
-                onClick={() => setIsFilterMenuOpen((v) => !v)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                  quickFilter !== 'all'
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-100'
-                }`}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 12.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-4.586L3.293 6.707A1 1 0 013 6V4z" />
-                </svg>
-                <span className="truncate max-w-[120px]">{activeQuickFilter.label}</span>
-                <span
-                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
-                    quickFilter !== 'all' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-600'
-                  }`}
-                >
-                  {activeQuickFilter.count}
-                </span>
-                <svg
-                  className={`w-3 h-3 transition-transform ${isFilterMenuOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {isFilterMenuOpen && (
-                <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 py-1.5 z-50">
-                  {quickFilters.map((chip) => {
-                    const isActive = quickFilter === chip.id;
-                    return (
-                      <button
-                        key={chip.id}
-                        type="button"
-                        onClick={() => {
-                          setQuickFilter(chip.id);
-                          setIsFilterMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs rounded-xl mx-1 transition-colors cursor-pointer ${
-                          isActive
-                            ? 'bg-blue-50 text-blue-700 font-bold'
-                            : 'text-slate-700 hover:bg-slate-50 font-medium'
-                        }`}
-                        style={{ width: 'calc(100% - 8px)' }}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              chip.tone === 'rose' ? 'bg-rose-500'
-                              : chip.tone === 'amber' ? 'bg-amber-500'
-                              : chip.tone === 'blue' ? 'bg-blue-500'
-                              : chip.tone === 'indigo' ? 'bg-indigo-500'
-                              : chip.tone === 'red' ? 'bg-red-500'
-                              : 'bg-slate-400'
-                            }`}
-                          ></span>
-                          <span>{chip.label}</span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <span
-                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
-                              isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
-                            }`}
-                          >
-                            {chip.count}
-                          </span>
-                          {isActive && (
-                            <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Right: Search + New (desktop) */}
-          <div className="flex items-center gap-2 shrink-0 lg:justify-end">
+          <div className="flex items-center gap-2 flex-1 min-w-0 lg:justify-end">
             <div className="relative flex-1 lg:w-56 lg:flex-none">
               <input
                 type="text"
@@ -781,6 +676,107 @@ export default function TaskBoard() {
             </button>
           </div>
         </div>
+
+        {/* Row 2: Project dropdown + Quick filter dropdown */}
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+          <select
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-600 max-w-[200px] truncate cursor-pointer"
+          >
+            <option value="all">All Projects ({tasks.length})</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                📁 {p.name}
+              </option>
+            ))}
+          </select>
+
+          <div className="relative" ref={filterMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsFilterMenuOpen((v) => !v)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                quickFilter !== 'all'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-100'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 12.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-4.586L3.293 6.707A1 1 0 013 6V4z" />
+              </svg>
+              <span className="truncate max-w-[120px]">{activeQuickFilter.label}</span>
+              <span
+                className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                  quickFilter !== 'all' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-600'
+                }`}
+              >
+                {activeQuickFilter.count}
+              </span>
+              <svg
+                className={`w-3 h-3 transition-transform ${isFilterMenuOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isFilterMenuOpen && (
+              <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/10 py-1.5 z-50">
+                {quickFilters.map((chip) => {
+                  const isActive = quickFilter === chip.id;
+                  return (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      onClick={() => {
+                        setQuickFilter(chip.id);
+                        setIsFilterMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs rounded-xl mx-1 transition-colors cursor-pointer ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700 font-bold'
+                          : 'text-slate-700 hover:bg-slate-50 font-medium'
+                      }`}
+                      style={{ width: 'calc(100% - 8px)' }}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            chip.tone === 'rose' ? 'bg-rose-500'
+                            : chip.tone === 'amber' ? 'bg-amber-500'
+                            : chip.tone === 'blue' ? 'bg-blue-500'
+                            : chip.tone === 'indigo' ? 'bg-indigo-500'
+                            : chip.tone === 'red' ? 'bg-red-500'
+                            : 'bg-slate-400'
+                          }`}
+                        ></span>
+                        <span>{chip.label}</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                            isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                          }`}
+                        >
+                          {chip.count}
+                        </span>
+                        {isActive && (
+                          <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {loading ? (
@@ -790,9 +786,10 @@ export default function TaskBoard() {
         </div>
       ) : (
         <>
-          {/* KANBAN */}
+          {/* KANBAN — auto-width columns that grow with content */}
           {viewMode === 'kanban' && (
             <div className="space-y-4 w-full">
+              {/* Mobile lane tabs */}
               <div className="md:hidden grid grid-cols-4 gap-1 p-1 bg-slate-200/70 rounded-2xl w-full">
                 {COLUMNS.map((col) => {
                   const count = filteredTasks.filter((t) => t.status === col.id).length;
@@ -820,20 +817,132 @@ export default function TaskBoard() {
               </div>
 
               <DragDropContext onDragEnd={onDragEnd}>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
+                {/* Desktop: auto-width columns, horizontal scroll if needed */}
+                <div className="hidden md:flex gap-4 w-full overflow-x-auto pb-3">
                   {COLUMNS.map((column) => {
                     const columnTasks = filteredTasks.filter((t) => t.status === column.id);
-                    const isVisibleOnMobile = activeMobileLane === column.id;
+                    // Grow column min width based on task count
+                    const minWidth = columnTasks.length > 6 ? 'min-w-[360px]' : 'min-w-[300px]';
 
                     return (
                       <div
                         key={column.id}
-                        className={`${isVisibleOnMobile ? 'flex' : 'hidden md:flex'} flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[480px] w-full`}
+                        className={`flex flex-col flex-1 ${minWidth} bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[560px]`}
                       >
                         <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
                           <div className="flex items-center gap-2">
                             <span className={`w-2.5 h-2.5 rounded-full ${column.dotColor}`}></span>
-                            <h2 className="font-bold text-xs text-slate-800">{column.label}</h2>
+                            <h2 className="font-bold text-sm text-slate-800">{column.label}</h2>
+                          </div>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${column.badgeBg}`}>
+                            {columnTasks.length}
+                          </span>
+                        </div>
+
+                        <Droppable droppableId={column.id}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className={`space-y-2.5 flex-1 overflow-y-auto min-h-[180px] rounded-xl p-1 transition-all ${
+                                snapshot.isDraggingOver
+                                  ? 'bg-blue-50/80 border-2 border-blue-400 border-dashed shadow-inner'
+                                  : 'border-2 border-transparent'
+                              }`}
+                            >
+                              {columnTasks.length === 0 && !snapshot.isDraggingOver ? (
+                                <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center text-xs text-slate-400 font-medium">
+                                  No tasks in this lane
+                                </div>
+                              ) : (
+                                columnTasks.map((task, index) => (
+                                  <Draggable key={task.id} draggableId={task.id} index={index}>
+                                    {(dragProvided, dragSnapshot) => (
+                                      <div
+                                        ref={dragProvided.innerRef}
+                                        {...dragProvided.draggableProps}
+                                        {...dragProvided.dragHandleProps}
+                                        onClick={() => openTaskDetail(task)}
+                                        className={`group p-3.5 bg-white rounded-2xl transition-all shadow-xs relative cursor-grab active:cursor-grabbing select-none ${
+                                          dragSnapshot.isDragging
+                                            ? 'shadow-2xl border-2 border-blue-500 ring-4 ring-blue-500/20 rotate-1 scale-[1.02] z-50'
+                                            : 'hover:border-blue-400 border border-slate-200/90 hover:shadow-md'
+                                        }`}
+                                      >
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                          <ProjectSelect
+                                            value={task.projectId}
+                                            onChange={(pid) => handleProjectChange(task.id, pid)}
+                                          />
+                                          <div className="flex items-center gap-1.5">
+                                            <PrioritySelect
+                                              value={task.priority}
+                                              onChange={(p) => handlePriorityChange(task.id, p)}
+                                            />
+                                            <span className="text-slate-300 group-hover:text-slate-500 text-xs font-bold leading-none" title="Drag task">
+                                              ⠿
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <h3 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                          {task.title}
+                                        </h3>
+
+                                        {task.description && (
+                                          <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">
+                                            {task.description}
+                                          </p>
+                                        )}
+
+                                        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
+                                          <DueDateSelect
+                                            value={task.dueDate}
+                                            onChange={(d) => handleDueDateChange(task.id, d)}
+                                          />
+
+                                          <div className="flex items-center gap-1.5">
+                                            {task.assigneeAvatar && (
+                                              <img
+                                                src={task.assigneeAvatar}
+                                                alt=""
+                                                className="w-4 h-4 rounded-full"
+                                              />
+                                            )}
+                                            <StatusSelect
+                                              value={task.status}
+                                              onChange={(s) => handleStatusChange(task.id, s)}
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))
+                              )}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Mobile: single active lane, full width */}
+                <div className="md:hidden w-full">
+                  {COLUMNS.map((column) => {
+                    if (activeMobileLane !== column.id) return null;
+                    const columnTasks = filteredTasks.filter((t) => t.status === column.id);
+                    return (
+                      <div
+                        key={column.id}
+                        className="flex flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[480px] w-full"
+                      >
+                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${column.dotColor}`}></span>
+                            <h2 className="font-bold text-sm text-slate-800">{column.label}</h2>
                           </div>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${column.badgeBg}`}>
                             {columnTasks.length}
