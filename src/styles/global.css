@@ -15,7 +15,7 @@
   }
 
   /* ============================================
-     FULL-WIDTH + ZOOM-PROOF RULES
+     FULL-WIDTH LAYOUT RULES (safe — modals keep size)
      ============================================ */
   html, body {
     width: 100%;
@@ -27,37 +27,32 @@
   }
 
   main {
-    width: 100% !important;
-    max-width: none !important;
+    width: 100%;
+    max-width: none;
     min-width: 0;
     display: block;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    margin: 0 !important;
+    padding-left: 0;
+    padding-right: 0;
+    margin: 0;
   }
 
-  /* Kill any centered wrapper inside main (nuclear option) */
-  main > * {
-    width: 100% !important;
-    max-width: none !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+  /* Neutralize capped wrappers only on the FIRST TWO levels inside <main>.
+     Deeply nested elements (modals, drawers, dropdowns, cards) keep their own sizing. */
+  main > div,
+  main > section,
+  main > article {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
   }
 
-  main > * > * {
-    width: 100% !important;
-    max-width: none !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-
-  main [class*="max-w-"] {
-    max-width: none !important;
-  }
-
-  main [class*="mx-auto"] {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+  main > div > div,
+  main > div > section,
+  main > div > article {
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   *, *::before, *::after {
@@ -202,7 +197,41 @@ html.dark a[class*="bg-blue-50"] {
   padding: 1.75rem !important;
 }
 
-/* Custom crisp scrollbars */
+/* ========================================================
+   MODAL / DIALOG PROTECTION
+   Prevent full-width global rules from stretching modals
+   ======================================================== */
+.fixed.inset-0 > .bg-white.max-w-md,
+.fixed.inset-0 > .bg-white.max-w-lg,
+.fixed.inset-0 > .bg-white.max-w-xl,
+.fixed.inset-0 > .bg-white.max-w-2xl {
+  width: 100%;
+  max-width: var(--modal-max-width, 28rem);
+}
+
+/* Restore the real Tailwind max-w-* values inside modals */
+.fixed.inset-0 [class*="max-w-md"] {
+  max-width: 28rem !important;
+}
+.fixed.inset-0 [class*="max-w-lg"] {
+  max-width: 32rem !important;
+}
+.fixed.inset-0 [class*="max-w-xl"] {
+  max-width: 36rem !important;
+}
+.fixed.inset-0 [class*="max-w-2xl"] {
+  max-width: 42rem !important;
+}
+.fixed.inset-0 [class*="max-w-3xl"] {
+  max-width: 48rem !important;
+}
+.fixed.inset-0 [class*="max-w-4xl"] {
+  max-width: 56rem !important;
+}
+
+/* ========================================================
+   SCROLLBARS
+   ======================================================== */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
