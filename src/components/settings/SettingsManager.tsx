@@ -386,7 +386,7 @@ export default function SettingsManager({ user }: SettingsProps) {
   ];
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6 pb-24 text-slate-800 dark:text-slate-100 antialiased">
+    <div className="w-full max-w-full space-y-6 pb-24 text-slate-800 dark:text-slate-100 antialiased">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900/95 dark:bg-white/95 text-white dark:text-slate-900 text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md transition-all flex items-center gap-2 border border-slate-700 dark:border-slate-200">

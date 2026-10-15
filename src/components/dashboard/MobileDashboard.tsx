@@ -120,7 +120,7 @@ export default function MobileDashboard({ user }: { user: any }) {
   return (
     <div className="bg-[#f8faff] text-slate-800 font-sans pb-12 antialiased">
       {/* Main Container */}
-      <main className="max-w-md md:max-w-5xl mx-auto px-1 sm:px-4 md:px-6 pt-2 sm:pt-4 space-y-5">
+      <main className="w-full max-w-full px-1 sm:px-4 md:px-6 pt-2 sm:pt-4 space-y-5">
         {/* Greetings Section */}
         <div className="flex items-start justify-between">
           <div>

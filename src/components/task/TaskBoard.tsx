@@ -364,14 +364,14 @@ export default function TaskBoard() {
     return matchesProject && matchesSearch && matchesQuickFilter(task) && autoArchiveMatch;
   });
 
-  const quickFilters: { id: QuickFilter; label: string; count: number; tone: string }[] = [
-    { id: 'all', label: 'All Tasks', count: tasks.length, tone: 'slate' },
-    { id: 'mine', label: 'My Tasks', count: tasks.filter((t) => !!currentUserId && t.assignedTo === currentUserId).length, tone: 'blue' },
-    { id: 'urgent', label: 'Urgent', count: tasks.filter((t) => t.priority === 'urgent').length, tone: 'rose' },
-    { id: 'high', label: 'High', count: tasks.filter((t) => t.priority === 'high').length, tone: 'amber' },
-    { id: 'today', label: 'Due Today', count: tasks.filter((t) => t.dueDate === todayISO).length, tone: 'indigo' },
-    { id: 'overdue', label: 'Overdue', count: tasks.filter((t) => !!t.dueDate && t.dueDate < todayISO && t.status !== 'done').length, tone: 'red' },
-    { id: 'unassigned', label: 'Unassigned', count: tasks.filter((t) => !t.assignedTo).length, tone: 'slate' },
+  const quickFilters: { id: QuickFilter; label: string; count: number; tone: string; icon: string }[] = [
+    { id: 'all', label: 'All Tasks', count: tasks.length, tone: 'slate', icon: '📋' },
+    { id: 'mine', label: 'My Tasks', count: tasks.filter((t) => !!currentUserId && t.assignedTo === currentUserId).length, tone: 'blue', icon: '👤' },
+    { id: 'urgent', label: 'Urgent', count: tasks.filter((t) => t.priority === 'urgent').length, tone: 'rose', icon: '🔴' },
+    { id: 'high', label: 'High Priority', count: tasks.filter((t) => t.priority === 'high').length, tone: 'amber', icon: '🟠' },
+    { id: 'today', label: 'Due Today', count: tasks.filter((t) => t.dueDate === todayISO).length, tone: 'indigo', icon: '📅' },
+    { id: 'overdue', label: 'Overdue', count: tasks.filter((t) => !!t.dueDate && t.dueDate < todayISO && t.status !== 'done').length, tone: 'red', icon: '⚠️' },
+    { id: 'unassigned', label: 'Unassigned', count: tasks.filter((t) => !t.assignedTo).length, tone: 'slate', icon: '⚪' },
   ];
 
   const getPriorityBadge = (priority: Task['priority']) => {
@@ -385,21 +385,6 @@ export default function TaskBoard() {
       default:
         return <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">Low</span>;
     }
-  };
-
-  const chipClass = (isActive: boolean, tone: string) => {
-    if (isActive) {
-      switch (tone) {
-        case 'blue':   return 'bg-blue-600 text-white border-blue-600 shadow-sm';
-        case 'rose':   return 'bg-rose-600 text-white border-rose-600 shadow-sm';
-        case 'amber':  return 'bg-amber-500 text-white border-amber-500 shadow-sm';
-        case 'indigo': return 'bg-indigo-600 text-white border-indigo-600 shadow-sm';
-        case 'red':    return 'bg-red-600 text-white border-red-600 shadow-sm';
-        case 'slate':
-        default:       return 'bg-slate-800 text-white border-slate-800 shadow-sm';
-      }
-    }
-    return 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50';
   };
 
   // ---------- Reusable styled inline selectors ----------
@@ -599,9 +584,9 @@ export default function TaskBoard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full">
       {/* Top Controls Toolbar */}
-      <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+      <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 w-full">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center bg-slate-100 p-1 rounded-xl">
@@ -639,11 +624,11 @@ export default function TaskBoard() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 flex-1 sm:justify-end">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-1 sm:justify-end">
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 sm:px-3 py-2 focus:outline-none focus:border-blue-600 flex-1 sm:flex-none max-w-[170px] sm:max-w-[200px] truncate"
+              className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 sm:px-3 py-2 focus:outline-none focus:border-blue-600 flex-1 sm:flex-none max-w-full sm:max-w-[170px] truncate cursor-pointer hover:bg-slate-100/60"
             >
               <option value="all">All Projects ({tasks.length})</option>
               {projects.map((p) => (
@@ -653,7 +638,20 @@ export default function TaskBoard() {
               ))}
             </select>
 
-            <div className="relative flex-1 sm:w-48 sm:flex-none">
+            <select
+              id="quick-filter-select"
+              value={quickFilter}
+              onChange={(e) => setQuickFilter(e.target.value as QuickFilter)}
+              className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 sm:px-3 py-2 focus:outline-none focus:border-blue-600 flex-1 sm:flex-none max-w-full sm:max-w-[170px] truncate cursor-pointer hover:bg-slate-100/60"
+            >
+              {quickFilters.map((chip) => (
+                <option key={chip.id} value={chip.id}>
+                  {chip.icon ? `${chip.icon}  ` : ''}{chip.label} ({chip.count})
+                </option>
+              ))}
+            </select>
+
+            <div className="relative flex-1 sm:w-44 sm:flex-none min-w-[120px]">
               <input
                 type="text"
                 value={searchQuery}
@@ -664,7 +662,7 @@ export default function TaskBoard() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
                 >
                   ✕
                 </button>
@@ -677,35 +675,6 @@ export default function TaskBoard() {
             >
               <span>+ New Task</span>
             </button>
-          </div>
-        </div>
-
-        {/* Quick Filters */}
-        <div className="pt-2 border-t border-slate-100 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Quick Filters</span>
-            <div className="flex-1 h-px bg-slate-100"></div>
-          </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'thin' }}>
-            {quickFilters.map((chip) => {
-              const isActive = quickFilter === chip.id;
-              return (
-                <button
-                  key={chip.id}
-                  onClick={() => setQuickFilter(chip.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border whitespace-nowrap transition-all active:scale-95 cursor-pointer shrink-0 ${chipClass(isActive, chip.tone)}`}
-                >
-                  <span>{chip.label}</span>
-                  <span
-                    className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
-                      isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    {chip.count}
-                  </span>
-                </button>
-              );
-            })}
           </div>
         </div>
       </div>

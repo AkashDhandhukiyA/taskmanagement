@@ -9,14 +9,7 @@ if (!user) {
 ---
 
 <Layout title="Tasks & Kanban - Acme Corp" activePath="/tasks">
-  <div class="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 w-full min-w-0">
-    <div class="flex items-center justify-between pb-3 border-b border-slate-200/80">
-      <div>
-        <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Tasks & Kanban</h1>
-        <p class="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5 sm:mt-1">Manage, categorize, and prioritize your team's workflow in real time</p>
-      </div>
-    </div>
-
+  <div class="space-y-4 sm:space-y-6 w-full max-w-full px-3 sm:px-4 md:px-6 py-3 sm:py-4 min-w-0">
     <!-- Interactive TaskBoard React Island with drag-and-drop -->
     <TaskBoard client:only="react" />
   </div>

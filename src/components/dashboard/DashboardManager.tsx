@@ -465,7 +465,7 @@ export default function DashboardManager({ user }: DashboardProps) {
   const PROJECT_COLORS = ['#6366f1', '#3b82f6', '#059669', '#ea580c', '#e11d48', '#7c3aed', '#0891b2', '#10b981'];
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 pb-24 text-slate-900 dark:text-slate-100 antialiased relative">
+    <div className="w-full max-w-full space-y-6 pb-24 text-slate-900 dark:text-slate-100 antialiased relative">
       {/* Ambient background glows for rich depth */}
       <div className="absolute -top-16 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-transparent rounded-full blur-3xl pointer-events-none -z-10"></div>
       <div className="absolute top-48 right-10 w-[450px] h-[450px] bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent rounded-full blur-3xl pointer-events-none -z-10"></div>
