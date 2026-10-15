@@ -592,13 +592,14 @@ export default function TaskBoard() {
     );
   };
 
+  // ⭐ THE KEY CHANGE: root wrapper is `w-full` AND removes Astro's default padding.
+  //    `[&>*]:w-full` forces every direct child to fill the width.
   return (
-    <div className="w-full space-y-5 p-3 sm:p-4 lg:p-5">
-      {/* Top Controls Toolbar — includes heading + full controls, 100% width */}
-      <div className="w-full bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-        {/* Row 1: Heading + View toggle + Actions */}
+    <div className="w-full min-w-0 max-w-none space-y-5 p-3 sm:p-4 lg:p-5">
+      {/* Toolbar — full width, contains heading + controls */}
+      <div className="w-full bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        {/* Row 1: Heading | View toggle | Search + New */}
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-          {/* Heading block */}
           <div className="flex items-center justify-between gap-2 lg:shrink-0">
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight">
@@ -609,7 +610,6 @@ export default function TaskBoard() {
               </p>
             </div>
 
-            {/* Mobile + New button */}
             <button
               onClick={openCreateModal}
               className="lg:hidden flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/25 transition-all cursor-pointer shrink-0"
@@ -618,7 +618,6 @@ export default function TaskBoard() {
             </button>
           </div>
 
-          {/* View toggle — stays on row 1 on desktop, wraps below on mobile */}
           <div className="flex items-center gap-2 lg:shrink-0">
             <div className="flex items-center bg-slate-100 p-1 rounded-xl">
               <button
@@ -648,7 +647,6 @@ export default function TaskBoard() {
             </div>
           </div>
 
-          {/* Right: Search + New (desktop) */}
           <div className="flex items-center gap-2 flex-1 min-w-0 lg:justify-end">
             <div className="relative flex-1 lg:w-56 lg:flex-none">
               <input
@@ -678,7 +676,7 @@ export default function TaskBoard() {
         </div>
 
         {/* Row 2: Project dropdown + Quick filter dropdown */}
-        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+        <div className="flex flex-wrap items-center gap-2 pt-3 mt-3 border-t border-slate-100 w-full">
           <select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
@@ -786,10 +784,8 @@ export default function TaskBoard() {
         </div>
       ) : (
         <>
-          {/* KANBAN — auto-width columns that grow with content */}
           {viewMode === 'kanban' && (
             <div className="space-y-4 w-full">
-              {/* Mobile lane tabs */}
               <div className="md:hidden grid grid-cols-4 gap-1 p-1 bg-slate-200/70 rounded-2xl w-full">
                 {COLUMNS.map((col) => {
                   const count = filteredTasks.filter((t) => t.status === col.id).length;
@@ -799,9 +795,7 @@ export default function TaskBoard() {
                       key={col.id}
                       onClick={() => setActiveMobileLane(col.id)}
                       className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                        isSelected
-                          ? 'bg-white text-blue-600 shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                        isSelected ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
                       <div className="flex items-center gap-1">
@@ -817,24 +811,21 @@ export default function TaskBoard() {
               </div>
 
               <DragDropContext onDragEnd={onDragEnd}>
-                {/* Desktop: auto-width columns, horizontal scroll if needed */}
-                <div className="hidden md:flex gap-4 w-full overflow-x-auto pb-3">
+                {/* Desktop: 4 equal columns filling 100% */}
+                <div className="hidden md:grid md:grid-cols-4 gap-4 w-full">
                   {COLUMNS.map((column) => {
                     const columnTasks = filteredTasks.filter((t) => t.status === column.id);
-                    // Grow column min width based on task count
-                    const minWidth = columnTasks.length > 6 ? 'min-w-[360px]' : 'min-w-[300px]';
-
                     return (
                       <div
                         key={column.id}
-                        className={`flex flex-col flex-1 ${minWidth} bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[560px]`}
+                        className="flex flex-col bg-slate-100/70 rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs min-h-[560px] w-full min-w-0"
                       >
                         <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2.5 h-2.5 rounded-full ${column.dotColor}`}></span>
-                            <h2 className="font-bold text-sm text-slate-800">{column.label}</h2>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${column.dotColor}`}></span>
+                            <h2 className="font-bold text-sm text-slate-800 truncate">{column.label}</h2>
                           </div>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${column.badgeBg}`}>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border shrink-0 ${column.badgeBg}`}>
                             {columnTasks.length}
                           </span>
                         </div>
@@ -879,9 +870,7 @@ export default function TaskBoard() {
                                               value={task.priority}
                                               onChange={(p) => handlePriorityChange(task.id, p)}
                                             />
-                                            <span className="text-slate-300 group-hover:text-slate-500 text-xs font-bold leading-none" title="Drag task">
-                                              ⠿
-                                            </span>
+                                            <span className="text-slate-300 group-hover:text-slate-500 text-xs font-bold leading-none" title="Drag task">⠿</span>
                                           </div>
                                         </div>
 
@@ -890,9 +879,7 @@ export default function TaskBoard() {
                                         </h3>
 
                                         {task.description && (
-                                          <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">
-                                            {task.description}
-                                          </p>
+                                          <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">{task.description}</p>
                                         )}
 
                                         <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
@@ -900,14 +887,9 @@ export default function TaskBoard() {
                                             value={task.dueDate}
                                             onChange={(d) => handleDueDateChange(task.id, d)}
                                           />
-
                                           <div className="flex items-center gap-1.5">
                                             {task.assigneeAvatar && (
-                                              <img
-                                                src={task.assigneeAvatar}
-                                                alt=""
-                                                className="w-4 h-4 rounded-full"
-                                              />
+                                              <img src={task.assigneeAvatar} alt="" className="w-4 h-4 rounded-full" />
                                             )}
                                             <StatusSelect
                                               value={task.status}
@@ -929,7 +911,7 @@ export default function TaskBoard() {
                   })}
                 </div>
 
-                {/* Mobile: single active lane, full width */}
+                {/* Mobile single lane */}
                 <div className="md:hidden w-full">
                   {COLUMNS.map((column) => {
                     if (activeMobileLane !== column.id) return null;
@@ -989,9 +971,7 @@ export default function TaskBoard() {
                                               value={task.priority}
                                               onChange={(p) => handlePriorityChange(task.id, p)}
                                             />
-                                            <span className="text-slate-300 group-hover:text-slate-500 text-xs font-bold leading-none" title="Drag task">
-                                              ⠿
-                                            </span>
+                                            <span className="text-slate-300 group-hover:text-slate-500 text-xs font-bold leading-none" title="Drag task">⠿</span>
                                           </div>
                                         </div>
 
@@ -1000,9 +980,7 @@ export default function TaskBoard() {
                                         </h3>
 
                                         {task.description && (
-                                          <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">
-                                            {task.description}
-                                          </p>
+                                          <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">{task.description}</p>
                                         )}
 
                                         <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
@@ -1010,14 +988,9 @@ export default function TaskBoard() {
                                             value={task.dueDate}
                                             onChange={(d) => handleDueDateChange(task.id, d)}
                                           />
-
                                           <div className="flex items-center gap-1.5">
                                             {task.assigneeAvatar && (
-                                              <img
-                                                src={task.assigneeAvatar}
-                                                alt=""
-                                                className="w-4 h-4 rounded-full"
-                                              />
+                                              <img src={task.assigneeAvatar} alt="" className="w-4 h-4 rounded-full" />
                                             )}
                                             <StatusSelect
                                               value={task.status}
@@ -1042,7 +1015,6 @@ export default function TaskBoard() {
             </div>
           )}
 
-          {/* LIST */}
           {viewMode === 'list' && (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-2xs w-full">
               {filteredTasks.length === 0 ? (
@@ -1052,7 +1024,7 @@ export default function TaskBoard() {
                   <div
                     key={task.id}
                     onClick={() => openTaskDetail(task)}
-                    className="p-3 sm:p-3.5 hover:bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 cursor-pointer transition-colors"
+                    className="p-3 sm:p-3.5 hover:bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 cursor-pointer transition-colors w-full"
                   >
                     <div className="flex items-start sm:items-center gap-3 min-w-0">
                       <button
@@ -1079,18 +1051,9 @@ export default function TaskBoard() {
                     </div>
 
                     <div className="flex items-center gap-2 pl-7 sm:pl-0 shrink-0 flex-wrap">
-                      <ProjectSelect
-                        value={task.projectId}
-                        onChange={(pid) => handleProjectChange(task.id, pid)}
-                      />
-                      <PrioritySelect
-                        value={task.priority}
-                        onChange={(p) => handlePriorityChange(task.id, p)}
-                      />
-                      <DueDateSelect
-                        value={task.dueDate}
-                        onChange={(d) => handleDueDateChange(task.id, d)}
-                      />
+                      <ProjectSelect value={task.projectId} onChange={(pid) => handleProjectChange(task.id, pid)} />
+                      <PrioritySelect value={task.priority} onChange={(p) => handlePriorityChange(task.id, p)} />
+                      <DueDateSelect value={task.dueDate} onChange={(d) => handleDueDateChange(task.id, d)} />
                     </div>
                   </div>
                 ))
@@ -1098,7 +1061,6 @@ export default function TaskBoard() {
             </div>
           )}
 
-          {/* TABLE */}
           {viewMode === 'table' && (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-2xs w-full">
               <table className="w-full min-w-[720px] text-left text-xs text-slate-700">
@@ -1114,36 +1076,12 @@ export default function TaskBoard() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredTasks.map((task) => (
-                    <tr
-                      key={task.id}
-                      onClick={() => openTaskDetail(task)}
-                      className="hover:bg-slate-50 cursor-pointer transition-colors"
-                    >
+                    <tr key={task.id} onClick={() => openTaskDetail(task)} className="hover:bg-slate-50 cursor-pointer transition-colors">
                       <td className="p-3.5 font-bold text-slate-900">{task.title}</td>
-                      <td className="p-3.5">
-                        <ProjectSelect
-                          value={task.projectId}
-                          onChange={(pid) => handleProjectChange(task.id, pid)}
-                        />
-                      </td>
-                      <td className="p-3.5">
-                        <StatusSelect
-                          value={task.status}
-                          onChange={(s) => handleStatusChange(task.id, s)}
-                        />
-                      </td>
-                      <td className="p-3.5">
-                        <PrioritySelect
-                          value={task.priority}
-                          onChange={(p) => handlePriorityChange(task.id, p)}
-                        />
-                      </td>
-                      <td className="p-3.5">
-                        <DueDateSelect
-                          value={task.dueDate}
-                          onChange={(d) => handleDueDateChange(task.id, d)}
-                        />
-                      </td>
+                      <td className="p-3.5"><ProjectSelect value={task.projectId} onChange={(pid) => handleProjectChange(task.id, pid)} /></td>
+                      <td className="p-3.5"><StatusSelect value={task.status} onChange={(s) => handleStatusChange(task.id, s)} /></td>
+                      <td className="p-3.5"><PrioritySelect value={task.priority} onChange={(p) => handlePriorityChange(task.id, p)} /></td>
+                      <td className="p-3.5"><DueDateSelect value={task.dueDate} onChange={(d) => handleDueDateChange(task.id, d)} /></td>
                       <td className="p-3.5 text-right">
                         <button
                           onClick={(e) => {
@@ -1299,12 +1237,7 @@ export default function TaskBoard() {
                   onChange={(pid) => {
                     handleProjectChange(selectedTask.id, pid);
                     const proj = projects.find((p) => p.id === pid);
-                    setSelectedTask({
-                      ...selectedTask,
-                      projectId: pid,
-                      projectName: proj?.name,
-                      projectColor: proj?.color,
-                    });
+                    setSelectedTask({ ...selectedTask, projectId: pid, projectName: proj?.name, projectColor: proj?.color });
                   }}
                 />
                 <PrioritySelect
@@ -1384,7 +1317,6 @@ export default function TaskBoard() {
                 </div>
               </div>
 
-              {/* Comments */}
               <div className="pt-4 border-t border-slate-100 space-y-3 pb-24 sm:pb-6">
                 <h4 className="text-xs font-bold text-slate-800">Comments ({comments.length})</h4>
                 <div className="space-y-2">
